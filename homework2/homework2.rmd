@@ -74,7 +74,8 @@ full_join(era_coverage_prop, erb_coverage_prop, by = 'chromosome') %>%
   theme(axis.text.x = element_text(angle = 90))  
 ```
 
-From the results, we can see that ERa and ERb site cover only the chromosome 1, 3, 6, 21, 22 and X. There are two possible reasons why we don't find the ERa and ERb sites on other chromosomes. One is that there actually is no ERa and ERb sites on the other chromosomes. However, it is unlikely for both sites to not be found on the rest of the 17 chromosomes. Furthermore, when we looked up the distribution of ERa and ERb sites, we found that they actually could be found on other chromosomes. For example, the ERa site could be found in the wnt11 and CTSD genes which are on chromosome 11 (Lin et al. 2007). Therefore, the reason might be that people who performed the experiment only searched for the ERa and ERb sites on just chromosome 6. This experimental limitation could be found in paper doing similar experiment such as Liu et al. 2008.
+From the results, we can see that ERa and ERb site cover only the chromosome 1, 3, 6, 21, 22 and X. There are two possible reasons why we don't find the ERa and ERb sites on other chromosomes. One is that there actually is no ERa and ERb sites on the other chromosomes. However, it is unlikely for both sites to not be found on the rest of the 17 chromosomes. Furthermore, when we looked up the distribution of ERa and ERb sites, we found that they actually could be found on other chromosomes. For example, the ERa site could be found in the wnt11 and CTSD genes which are on chromosome 11 (Lin et al. 2007). The reason why only chromosome 1, 3, 6, 21, 22 and X were investigated here might due to the experimental limitation that the thiling array that was used in this experiment was designed to cover only those 6 chromosomes. The example of arrays that were designed to cover fews chromosomes is Affymetrix GeneChip Human Tiling  Arrays (https://www.affymetrix.com/support/technical/datasheets/human_tiling_datasheet.pdf).
+This experimental limitation was also found in other study that use Affymetrix Human Tiling Arrays such as in Liu et al. 2008.
 
 
 **b) Finding the number of overlapping ERa and ERb sites **
@@ -91,7 +92,7 @@ Then we plotted Venn diagram and found that there are a total of 582 ERa sites a
 ```{r}
 library(VennDiagram)
 grid.newpage()
-draw.pairwise.venn(582, 486, 346, category = c("ERa", "ERb"), 
+draw.pairwise.venn(581, 485, 346, category = c("ERa", "ERb"), 
                    lty = rep("blank", 2), fill = c("green", "light blue"))
 ```
 
