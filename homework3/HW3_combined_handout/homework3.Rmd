@@ -1,0 +1,95 @@
+---
+title: "homework3"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/home/nuttapong/Desktop/block4/hightp/homework3/HW3_combined_handout/HW3_combined_handout/")
+```
+
+```{r}
+
+library(IsoformSwitchAnalyzeR)
+library(tidyverse)
+library(pheatmap)
+
+```
+
+### Question 1.1
+
+```{r}
+wt1_quant <- read_tsv("./salmon_result_part1/salmon_result_part1/WT1/quant.sf")
+
+wt1_quant %>% ggplot(aes(x=Length, y=EffectiveLength)) + 
+  scale_x_continuous(trans='log10') + scale_y_continuous(trans='log10')  + 
+  geom_point(alpha=0.3) +
+  geom_smooth() + geom_abline(color = "red", linetype=2)
+```
+
+### Question 1.2
+
+### Question 1.3
+
+```{r}
+
+all_salmons <- importIsoformExpression(parentDir =
+                                         "./salmon_result_part1/salmon_result_part1/")
+```
+
+```{r}
+salmon_matrix <- as.matrix(all_salmons$abundance[,2:ncol(all_salmons$abundance)])
+rownames(salmon_matrix) <- all_salmons$abundance[,1]
+
+transformed_salmon <- log2(salmon_matrix+1)
+
+transformed_salmon[1:4,]
+```
+
+### Question 1.4
+
+```{r}
+salmon_tibble <- as_tibble(transformed_salmon, rownames=NA)
+
+top100var <- salmon_tibble %>% rownames_to_column() %>% rowwise() %>% 
+  mutate(variance=var(c(WT1, WT2, WT3, WTTPA1, WTTPA2, WTTPA3))) %>% 
+  arrange(desc(variance)) %>% slice(1:100)
+
+```
+
+### Question 1.5
+
+```{r}
+top100var_mat <- as.matrix(top100var[,2:7])
+rownames(top100var_mat) <- as.data.frame(top100var)[,1]
+pheatmap(top100var_mat, show_rownames = TRUE, scale = "row", fontsize_row = 3, 
+         fontsize_col = 5)
+```
+
+## Question 2
+
+### Question 1.3
+
+```{r}
+all_salmons2 <- importIsoformExpression(parentDir =
+                                          "./salmon_result_part2/salmon_result_part2/")
+```
+
+### Question 2.1
+
+```{r}
+designMat <- data.frame(sampleID=colnames(all_salmons2$abundance)[-1],
+                        condition=
+                          str_replace(colnames(all_salmons2$abundance)[-1], "[0-9]", ""))
+
+switchAnalyzeRList <- importRdata(all_salmons2$abundance,
+                                  designMatrix = designMat,
+                                  isoformExonAnnoation =
+                                    "./salmon_result_part2/salmon_result_part2/subset.gtf", 
+                                  addAnnotatedORFs=FALSE)
+switchAnalyzeRList
+```
+
+### Question 2.2
