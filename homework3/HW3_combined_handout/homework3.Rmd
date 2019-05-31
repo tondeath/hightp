@@ -98,7 +98,6 @@ Moreover, we can see that in our code the argument scale was changed form the de
 
 ## Question 2
 
-### Question 1.3
 
 ```{r}
 all_salmons2 <- importIsoformExpression(parentDir =
@@ -106,6 +105,8 @@ all_salmons2 <- importIsoformExpression(parentDir =
 ```
 
 ### Question 2.1
+
+First we load data into switchAnalyzeRList object using importRdata. The summary statistics of resulting switchAnalyzeRList were as below. 
 
 ```{r}
 designMat <- data.frame(sampleID=colnames(all_salmons2$abundance)[-1],
@@ -121,8 +122,22 @@ switchAnalyzeRList <- importRdata(isoformCountMatrix = all_salmons2$counts,
 switchAnalyzeRList
 ```
 
+In total there were 7567 isoforms in the data set, and those isoforms came from 3304 genes. The samples came from two groups including the organism that splice factor X were knocked out and the wild type organism.
+
+The options addAnnotatedORFs would be used only when we have the GTF file that specified the ORF region of each isform in our data set, and want to add that annotation about the position of ORF on our transcript to the current data. This ORF information can directly be used by IsoformSwitchAnalyzeR for down stream analysis such as for analyzing the consequences of isoform switch instead of having to predict ORF from analyzeORF() function.
+However, we disable this option here by setting it to FALSE as we did not have GTF file contain ORF information.
+
+
 ### Question 2.2
 
+The reason why the annotation in the GTF file must be the exact annotation quantified with Salmon is because the IsoformSwitchAnalyzeRwill annotate the isoform in isoformRepExpression data frame by matching the isoform_id in data frame with the isoform_id in GTF file. The isoform_id unlike GenBank accession number is not the fixed, specific id for each transcript isoform. Thereofre, the isoform_id can be changed between experiment. That is why we need to make sure that the annotation in GTF file is the exact annotation of the same data set from salmon in order to get correct annotation.
+
+
+### Question 2.3
+
+```{r}
+
+```
 
 
 
