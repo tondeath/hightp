@@ -1,0 +1,10 @@
+To select which gene is the most important we screen the results by 2 main criteria. First, we looking for the gene with significant change in isoform usage in at least 2 isoform. This criterion ruled out 5830418K08Rik gene where we could not identify significant switch between conditions in at least 2 isoforms. The another criteria that we use are first there is clear structural changes such in isoform structure as the isoform change from coding isoform to non coding isoform, loss of intron or exon, change in signal peptide or loss of annotated domain.
+
+Using above criteria we reduce the number of gene to 5 genes including Ablim1, Tef,  Snx14, Slmap, and Rac1. Furthermore, we know that our knok out gene is splicing factor, so we can narrow down to 2 genes that exhibited changes in splicing which are ABlim1 and Rac1.
+
+
+To original hypothesis is that the factor X might be splicing factor. 
+
+The global enrichment plot by itself could not clearly told us whether our factor X is actually splicing factor or not as the change in both splicing pattern or change in trascription start site can also led to all of those consequences with FDR < 0.05 that were found in majority of switching. These significant consequences that can be introduced by both the change in splicing pattern or change in TSS includes ORF loss, domian loss, shorter ORF or conversion to non-coding transcript.
+
+When we looks at alternative splicing analysis, we can 
