@@ -8,3 +8,5 @@ To original hypothesis is that the factor X might be splicing factor.
 The global enrichment plot by itself could not clearly told us whether our factor X is actually splicing factor or not as the change in both splicing pattern or change in trascription start site can also led to all of those consequences with FDR < 0.05 that were found in majority of switching. These significant consequences that can be introduced by both the change in splicing pattern or change in TSS includes ORF loss, domian loss, shorter ORF or conversion to non-coding transcript.
 
 When we looks at alternative splicing analysis, we can 
+
+These outliers might be the short cDNA fragments that were not completely filtered out. The outlier that came from monotonically increasing region in the line might correspond 
