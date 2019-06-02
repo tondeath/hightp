@@ -41,7 +41,7 @@ wt1_quant %>% ggplot(aes(x=Length, y=EffectiveLength)) +
 
 ### Question 1.2
 
-From the figure in question 1.1, we can see the the set of outliers that follow the sigmoidal-like curve. These outliers might correspond to the cDNA fragments that came from RNAs with very low expression level. Therefore, those cDNA might have very low read coverage which in extreme cases it can even be that those cDNA were represented by single limited size read. The upper bound of effective size in those cDNA might correspond to the largest possible read size of the type of sequencing machine that was used in this experiment.
+From the figure in question 1.1, we can see the the set of outliers that follow the sigmoidal-like curve. These outliers might correspond to the cDNA fragments that came from RNAs with very low expression level. Those cDNA might have very low read coverage which in extreme cases it can even be that those cDNA were represented by single limited size read. Therefore, when the program tried to estimate the effective size, it could be estimated only from this single read which then resulting in observed outliers. The upper bound of effective size in those outliers might correspond to the largest possible read size of the type of sequencing machine that was used in this experiment.
 
 ### Question 1.3
 
