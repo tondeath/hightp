@@ -87,12 +87,12 @@ bedtools intersect -a ERa_hg18.bed -b ERb_hg18.bed -v | wc -l  # 236
 bedtools intersect -a ERb_hg18.bed -b ERa_hg18.bed -v | wc -l  # 140
 ```
 
-Then we plotted Venn diagram and found that there are a total of 582 ERa sites and 486 ERb sites with 346 overlapping sites between ERa and ERb.
+Then we plotted Venn diagram and found that there are a total of 581 ERa sites and 485 ERb sites with 345 overlapping sites between ERa and ERb.
 
 ```{r}
 library(VennDiagram)
 grid.newpage()
-draw.pairwise.venn(581, 485, 346, category = c("ERa", "ERb"), 
+draw.pairwise.venn(581, 485, 345, category = c("ERa", "ERb"), 
                    lty = rep("blank", 2), fill = c("green", "light blue"))
 ```
 
@@ -110,21 +110,19 @@ We also looked at the conservation along this potential gene in the mouse (Figur
 
 ![Overall genome browser tracks of mouse gene](./fig3.png)
 
-These discrepancies between the structure of *D. melanogaster rpl*41 and the mouse gene led us to question whether this sequence actually belongs to active ribosomal protein gene equivalent to *D. melanogaster rpl*41, or is part of rpl41 or not. 
+These discrepancies between the structure of *D. melanogaster rpl*41 and the mouse gene led us to question whether this sequence actually belongs to active mouse *rpl*41
 
-To check the validity of the gene, we next looked at Broad H3 ChIPseq track to see the distribution of histone mark around the mouse potential gene. If this gene is actually an active functional gene, we should see some activation mark like H3K4Me1 to H3K4Me3. However, we can see from the figure (Figure 3) that in the mouse neuroprogenitor cells the mark found is mostly around the upstream of the gene where repressive marks such as H3K27Me3 or H3K9Me3 and very low level of H3K4Me1 to H3K4Me3 could be seen. This trend were all the same in other cell lines.
+So as suggested by teacher, we BLAT this 80 bp region to the mouse genome itself. Then we looked for the BLAT results that comes from differnt region (not from chr9:24,851,809-24,851,889 in question), and found 2 possible gene structures for this sequence in genome. The first type of structure was similar to what we found above which was the gene with single exon containing this 80 bp sequence (Figure 4) (chr10:43,144,839-43,144,916). Another type of structure for this sequence was the gene with 3 separate exon where the 80 bp sequence span across those 3 exon (Figure 5) (chr10:127,951,336-127,951,909). 
 
-Interestingly, when we turned on RepatMasker track, we could see that in mouse there were many transposon e.g. LINE or SINE directly upstream of the potential gene, while the region around *D. melanogaster rpl*41 were free of transposon. This may explain why there were many repressive histone marks up-and downstream.
-
-Furthermore, as suggested by the teacher, we BLAT this 80 bp region to the mouse genome itself. Then we looked for the BLAT results that comes from differnt region (not from chr9:24,851,809-24,851,889 in question), and found 2 possible gene structures for this sequence in genome. The first type of structure was similar to what we found above which was the gene with single exon containing this 80 bp sequence (Figure 4). Another type of structure for this sequence was the gene with 3 separate exon where the 80 bp sequence span across those 3 exon (Figure 5). 
+The gene with 3 exon was actually validated mouse *rpl*41 with RefSeq in Genbank (NM_018860.4) while non of single exon variant has no RefSeq in mouse and laso has not been validated as *rpl*41. All of this information indicated that our 80 bp sequence which belong to the group of single exon variant might not be functional mouse *rpl*41 now. Single exon variant might be the processed pseudogene as their structure similar to the processed *rpl*41 mRNA. This processed *rpl*41 pseudogene may arise from the retrotransposition of the processed mRNA of *rpl*41 (Kazazian 2014). 
 
 ![Single exon form of mouse *rpl*41](./fig4.png)
 
-![Single exon form of mouse *rpl*41](./fig5.png)
+![Three exons form of mouse *rpl*41](./fig5.png)
 
-We then looked at the genes from BLAT results representing each of these 2 type of structure and found that there is no upstream transposon element at both gene. Also there were very high density of activation histone mark upstream and across both genes in either neuroprogenitor cell or other cell lines. This indicated that both forms of this potential *rpl*41 gene in mouse might be functional especially the form with 3 exon as the histone activation signal upstream and across that form of rpl41 gene were much more intense than the other form with single exon.
 
-All of this information indicated that our 80 bp sequence in question might be part of mouse *rpl*41 gene, but this sequence at (chr9:24,851,809-24,851,889) might not be function due to the transposon upstream of this truncated gene. 
+
+ 
 
 
 
@@ -135,9 +133,12 @@ All of this information indicated that our 80 bp sequence in question might be p
 
 ## References
 
+Kazazian, H. H. 2014. Processed pseudogene insertions in somatic cells. Mobile DNA, 5(1).
+
 Lin, Z., Reierstad, S., Huang, C.C. and Bulun, S.E., 2007. Novel estrogen receptor-alpha binding sites and estradiol target genes identified by chromatin immunoprecipitation cloning in breast cancer. Cancer research, 67(10), pp.5017-5024.
 
-Liu, Y., Gao, H., Marstrand, T.T., Str?m, A., Valen, E., Sandelin, A., Gustafsson, J.?. and Dahlman-Wright, K., 2008. The genome landscape of ER-alpha-and ER-beta-binding DNA regions. Proceedings of the National Academy of Sciences, 105(7), pp.2604-2609.
+Liu, Y., Gao, H., Marstrand, T.T., Strm, A., Valen, E., Sandelin, A., Gustafsson, J.?. and Dahlman-Wright, K., 2008. The genome landscape of ER-alpha-and ER-beta-binding DNA regions. Proceedings of the National Academy of Sciences, 105(7).
+
 
 
 

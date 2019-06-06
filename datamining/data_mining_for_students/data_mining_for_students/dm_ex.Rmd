@@ -1,0 +1,142 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(pheatmap)
+setwd("/home/nuttapong/Desktop/block4/hightp/datamining/data_mining_for_students/data_mining_for_students")
+cage_dat <- read_tsv("htbinf_cage_tpms.txt")
+# data set contain cage tag cluster id (tc_id) + its location + expression in each tissue
+
+
+exp_mat <- as.matrix(cage_dat[4:10])
+rownames(exp_mat) <- cage_dat[["tc_id"]]
+```
+
+```{r}
+
+melt_cage <- cage_dat %>% gather(key="tissue", val="TPM", -location, -strand, -tc_id) 
+
+melt_cage %>% ggplot(aes(x=TPM)) + facet_wrap(~tissue) + geom_histogram(bins = 50)
+
+```
+
+
+```{r}
+
+fviz_nbclust(exp_mat_norm, kmeans, method = "wss") +
+  labs(subtitle = "Elbow method")
+```
+
+```{r}
+
+fviz_nbclust(exp_mat_norm, kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+```
+
+```{r}
+fviz_nbclust(exp_mat_norm, kmeans, nstart = 25,  method = "gap_stat", nboot = 50)+
+  labs(subtitle = "Gap statistic method")
+```
+
+```{r}
+six_cluster <- kmeans(exp_mat_norm, 6)
+
+cluster_assignment <- as.data.frame(six_cluster$cluster)
+
+pheatmap((exp_mat), scale = "row", annotation_row=(cluster_assignment), show_rownames = FALSE)
+
+```
+
+```{r}
+transposed_exp_mat <- t(exp_mat_norm)
+pca_transposed_exp <- prcomp(transposed_exp_mat)
+ggplot(as.data.frame(pca_transposed_exp$x), aes(x=PC1, y=PC2)) + geom_point()
+
+```
+
+```{r}
+positive_score <- function(x, n_tissue){
+  return(x*n_tissue)
+}
+
+penalty <- function(other_row_val){
+  return(sum(other_row_val))
+}
+
+calcSpecificityScore <- function(exp_matrix, n_tissue){
+  # normalizing TPM by column
+  scale_exp <- scale(exp_matrix)
+  scale_exp_tibble <- as.tibble(scale_exp)
+  
+  score_mat <- scale_exp_tibble %>% mutate_each(func)
+  
+  
+  
+  return(score_mat)
+}
+
+
+
+
+```
+
+
+$$
+score_{ij} = \frac{(n_{tissue} - 1) * normalized\ TPM_{ij}\ -\ \Sigma_{j\ \neq\ current\ j}\ normalized\ TPM_{ij}}{(n_{tissue} - 1) * normalized\ TPM_{ij}\ +\ \Sigma_{j\ \neq\ current\ j}\ normalized\ TPM_{ij}}
+\\
+\\
+when\ \ i \ = 1,\ 2,\ 3,\ ...\ n_{sample} \\
+when\ \ j \ = 1,\ 2,\ 3,\ ...\ n_{tissue} 
+$$
+
+
+```{r}
+testdf <- data.frame(a = c(10,0,5), b = c(5,0,15), c= c(5,10,3))
+
+
+calcScore <- function(exp_df){
+  # use min - max scaling 
+  exp_df <- scale(exp_df)
+  #exp_df <- apply(exp_df, MARGIN = 2, FUN = function(X) (X - min(X))/diff(range(X)))
+  
+  numRow <- nrow(exp_df)
+  numCol <- ncol(exp_df)
+
+  scoredf <- data.frame(matrix(NA, nrow = numRow, ncol = numCol))
+  row.names(scoredf) <- row.names(exp_df)
+  colnames(scoredf) <- colnames(exp_df)
+
+  for(i in 1:numRow){
+    rowSum <- sum(exp_df[i,])
+    for(j in 1:numCol){
+      penalty <- rowSum - exp_df[i,j]
+      robustness <- (numCol - 1) * exp_df[i,j]
+      score <- (robustness - penalty)
+      scoredf[i,j] <- score
+    }
+  }
+  return(scoredf)
+}
+
+scoreDf <- calcScore(testdf)
+scale(testdf)
+scoreDf
+```
+
+
+```{r}
+exp_df <- as.data.frame(exp_mat)
+exp_score <- calcScore(exp_df)
+cage_dat[max.col(t(exp_score), "first"),]
+```
+
+
+
+

@@ -1,16 +1,20 @@
 ---
-title: "homework3"
+title: "Homework3"
 output:
   pdf_document: default
   html_document: default
 ---
 
+Name: Nuttapong Mekvipad, Ryan William Moreau, Rani Nielsen, Silvija Pupsaite, Liuqing Zheng
+
+Group: 7
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "/home/nuttapong/Desktop/block4/hightp/homework3/HW3_combined_handout/")
+knitr::opts_knit$set(root.dir = "./")
 ```
 
-```{r}
+```{r, include=FALSE}
 
 library(IsoformSwitchAnalyzeR)
 library(tidyverse)
@@ -21,16 +25,16 @@ library(pheatmap)
 ### Question 1.1
 
 ```{r}
-wt1_quant <- read_tsv("./salmon_result_part1/salmon_result_part1/WT1/quant.sf")
+wt1_quant <- read_tsv("./salmon_result_part1/WT2/quant.sf")
 ```
 
 
-Here we plotted the isoform length versus effective length, and used geom smooth to show the trend line of the relationship between isoform length and effective length. The dash line shows the relationship where isoform lengths are equal to effective lengths.
+Here we plotted the isoform lengths versus effective lengths, and used geom smooth to show the trend line of the relationship between isoform lengths and effective lengths. The dash line shows the relationship where isoform lengths are equal to effective lengths.
 
-From the plot, we can see that the actual relationship of isoform length and effective length was not linear relationship where isoform lengths are equal to effective lengths, but the effective lengths were actually shorter than the isoform length. This is due to the fact that during the cDNA library preparation step we fragmented the cDNA and filtered out the fragments that were smaller than certain threshold. 
-These short fragments were mostly from the both end of cDNA; therefore the effective length is shorter than actual isoform length. 
+From the plot, we can see that the actual relationship of isoform lengths and effective lengths was not linear relationship where isoform lengths are equal to effective lengths, but the effective lengths were actually shorter than the isoform lengths. This is due to the fact that during the cDNA library preparation step we fragmented the cDNA and filtered out the fragments that were smaller than certain threshold. 
+These short fragments were mostly from the both end of cDNA; therefore the effective lengths were shorter than actual isoform lengths. 
 
-Moreover, we can see that the deviation from identity line for the shorter isoform was much greater than the longer isoform. This is because the filtered out fragment make up to greater proportion based pair in shorter isoform than longer isoform given the certain filtering threshold. 
+Moreover, we can see that the deviation from identity line for the shorter isoform was much greater than the longer isoform. This is because the filtered out fragment made up to greater proportion of based pair in shorter isoform than longer isoform given the certain filtering threshold. 
 
 ```{r}
 wt1_quant %>% ggplot(aes(x=Length, y=EffectiveLength)) + 
@@ -41,7 +45,15 @@ wt1_quant %>% ggplot(aes(x=Length, y=EffectiveLength)) +
 
 ### Question 1.2
 
-From the figure in question 1.1, we can see the the set of outliers that follow the sigmoidal-like curve. These outliers might correspond to the cDNA fragments that came from RNAs with very low expression level. Those cDNA might have very low read coverage which in extreme cases it can even be that those cDNA were represented by single limited size read. Therefore, when the program tried to estimate the effective size, it could be estimated only from this single read which then resulting in observed outliers. The upper bound of effective size in those outliers might correspond to the largest possible read size of the type of sequencing machine that was used in this experiment.
+From the plot in Q1.1, we can see the many outliers with effective length around 170 bp. When, we look into those outliers. We found that most of them (843 from 875) have TPM = 0 (also NumeRead = 0). Moreover, the length of those transcripts were 1000 or more. These outliers with TPM = 0 and long actual length could also be seen in other data set although with difference effective length such as effective length = 178 in WT2 or effective length = 181 in WT3. So this outlier might be systemic outliers that were produced by Salmon program or was added to data set.
+
+```{r}
+l170tpm0 <- wt1_quant %>% filter(EffectiveLength == 170 & TPM == 0)
+l170tpmnot0 <- wt1_quant %>% filter(EffectiveLength == 170 & TPM != 0)
+dim(l170)[1]
+dim(l170tpmnot0)[1]
+```
+
 
 ### Question 1.3
 
@@ -49,8 +61,7 @@ Here we imported salmon data and transformed the abundance matrix by the functio
 
 ```{r}
 
-all_salmons <- importIsoformExpression(parentDir =
-                                         "./salmon_result_part1/salmon_result_part1/")
+all_salmons <- importIsoformExpression(parentDir = "./salmon_result_part1/")
 ```
 
 ```{r}
@@ -82,26 +93,25 @@ head(top100var, 5)
 
 ### Question 1.5
 
-We plotted the heatmap of matrix contain the transformed abundance value of top 100 transcripts with highest variance among samples using pheatmap function.
+We plotted the heatmap of matrix containing the transformed abundance value of top 100 transcripts with highest variance among samples using pheatmap function.
 
 From the heatmap we can see that the samples could be clustered by the expression profile into 2 groups. The first group contained WT2, WT3 and WTTPA1, and the second group contained WT1, WTTPA2 and WTTPA3). We can also see that those 2 groups clearly had different expression profile. The genes in top clusters of first group were expressed more than the bottom cluster, while the genes in top clusters of second group were expressed less than the bottom cluster. 
 
 ```{r}
 top100var_mat <- as.matrix(top100var[,2:7])
 rownames(top100var_mat) <- as.data.frame(top100var)[,1]
-pheatmap(top100var_mat, show_rownames = TRUE, scale = "row", fontsize_row = 2.5, 
+pheatmap(top100var_mat, show_rownames = FALSE, scale = "row", fontsize_row = 2.5, 
          fontsize_col = 5)
 ```
 
-Moreover, we can see that in our code the argument scale was changed form the default which is "none" to "row". This would told the function to normalize the $log_2$ abundance value of all genes in each sample. The advantage of normalization is that it will put the $log_2$ abundance value on the same scale. This will enable us to compare the abundance value of the same gene between samples, and it also helps us to clearly see the different between high and low expression gene across all samples when plotting heatmap.
+Moreover, we can see that in our code the argument "scale" was changed form the default which is "none" to "row". This would tell the function to normalize the $log_2$ abundance value of all genes in each sample. The advantage of normalization is that it will put the $log_2$ abundance value on the same scale. This enabled us to compare the abundance value of the same gene between samples, and it also helped us to clearly see the different between high and low expression gene across all samples when plotting heatmap.
 
 
 ## Question 2
 
 
 ```{r}
-all_salmons2 <- importIsoformExpression(parentDir =
-                                          "./salmon_result_part2/salmon_result_part2/")
+all_salmons2 <- importIsoformExpression(parentDir = "./salmon_result_part2/")
 ```
 
 ### Question 2.1
@@ -117,7 +127,7 @@ switchAnalyzeRList <- importRdata(isoformCountMatrix = all_salmons2$counts,
                                   isoformRepExpression = all_salmons2$abundance,
                                   designMatrix = designMat,
                                   isoformExonAnnoation =
-                                    "./salmon_result_part2/salmon_result_part2/subset.gtf", 
+                                    "./salmon_result_part2/subset.gtf", 
                                   addAnnotatedORFs=FALSE)
 switchAnalyzeRList
 ```
@@ -130,12 +140,12 @@ However, we disabled this option here by setting it to FALSE as we did not have 
 
 ### Question 2.2
 
-The reason why the annotation in the GTF file must be the exact annotation quantified with Salmon is because the IsoformSwitchAnalyzeR will annotate the isoform in isoformRepExpression data frame by matching the isoform_id in data frame with the isoform_id in GTF file. The isoform_id is not the fixed id for each transcript isoform unlike GenBank accession number/ENSEMBL id for transcripts. Therefore, the isoform_id can be changed between experiment. That is why we need to make sure that the annotation in GTF file is the exact annotation of the same data set from salmon in order to get correct annotation.
+The reason why the annotation in the GTF file must be the exact annotation quantified with Salmon is because before performing further downstream analysis based on provided annotation, the IsoformSwitchAnalyzeR need to ensure that the isoforms were present in both annotation and quantifictaion data. The overlapping of isoforms will be checked by calculating Jaccard similarity which quantify the overlapping of isoform_ids between annotation and quantification data. The data sets that have Jaccard similarity lower than 0.925 will throw the error “The annotation and quantification (count/abundance matrix and isoform annotation) seems to be different (Jaccard similarity < 0.925)”.  
 
 
 ### Question 2.3
 
-The table of top 10 switching genes with consequences sorted by q-values could be made by using below code. The top 10 genes were 5830418K08Rik, Ablim1, Tef, Xrcc6, Snx14, Slmap, Rac1, Fbxw7, Pld2 and Rrbp1, respectively.
+The table of top 10 switching genes with consequences sorted by q-values could be make using below code. The top 10 genes were 5830418K08Rik, Ablim1, Tef, Xrcc6, Snx14, Slmap, Rac1, Fbxw7, Pld2 and Rrbp1, respectively.
 
 ```{r}
 switchList <- readRDS("./hw3switchList.Rdata")
@@ -159,17 +169,27 @@ for(gene in top10genes_name){
              condition2 = switchCondition[2])
   dev.off()
 }
+
+
+switchPlot(
+    switchAnalyzeRlist = switchList,
+    gene = top10switch$gene_id,
+    condition1 = top10switch$condition_1,
+    condition2 = top10switch$condition_2
+)
 ```
 
 ### Question 2.5
 
-We suspected that the knocked out gene coded for splicing factor, so we expected that the genes that were relevant to this knocking out should show clear splicing changes not other possible structural change such as transcription start site changes. This narrowed genes down from 10 genes to Rac1 where the swicth between isoform TCONS_00104606 and TCONS_00104607 was clearly can happended only by splicing change. While in other genes the changes in isoform structure could also be caused by TSS change. Moreover, the isoform with significatly increase in usage in knocked out mouse was non-coding isoform, while the isoform with significantly higher isoform usage in wild type mouse was the normal coding isoform that could be translated into functional protein. This means that this gene loss function in knocked out mouse due to isoform switch. Therefore, we picked Rac1 as the most important gene. 
+From 10 genes, there were 3 genes including slmap, Tef and Rac1 where isoform switch clearly result in loos of function of the genes due to the conversion of coding to non-coding isoform. Out of these 3 gene, we chose Rac1 gene as the most important gene. Rac1 plays roles wide range of functions including development of cerebral cortex in mouse [1], glucose transportation in reponse to insulin [2], and also require for development of pancreatic cancer cell [3]. Loss of the function of Rac1 caused by loss of Ras domain due to the switch of Rac1 from TCONS_00104607 in wild type to TCONS_00104606 in mutant will possibly result in developmental abnormalities in brain and insulin irresponsive similar to the Rac1 KO mouse [1,2]. When compared with slmap and Tef which still not have as many experimental studies in mouse to support teir function as in RAc1, we therefore chose Rac1 here.
 
 ![switchPlot of Rac1](./Rac1.png)
 
+\newpage
+
 ### Question 2.6
 
-From the global enrichment plot the general, changes in isform structure that were significant (FDR < 0.05) were ORF loss, domain loss, shortening of ORF, and conversion of transcript to non-coding transcript. All of these general changes can be introduced by both change in splicing pattern or change in trascription start site. So, we could not clearly say whether these pattern supported our original hypothesis that factor X might be splicing factor or not.
+From the global enrichment plot the general changes in isoform structure that were significant (FDR < 0.05) were ORF loss, domain loss, shortening of ORF, and conversion of transcript to non-coding transcript. All of these general changes can be introduced by both changes in splicing pattern or changes in trascription start site. So, we can not clearly say whether these patterns support our original hypothesis that factor X might be splicing factor.
 
 If factor X was actually splicing factor, we expected to observe that majority of switching would show alternative splicing. However, from alternative splicing analysis, we can see that less than half of switching showed the sign of MES loss, IR gain, ES loss and ATTs gain also with FDR higher than 0.05. Only ATSS was found in more than half of switching events with FRD < 0.05. 
 
@@ -191,7 +211,8 @@ extractSplicingEnrichment(
 )
 ```
 
-
-
+1.https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2653853/
+2.https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3661612/
+3.https://www.ncbi.nlm.nih.gov/pubmed/21684285
 
 

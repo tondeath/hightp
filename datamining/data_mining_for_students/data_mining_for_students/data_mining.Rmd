@@ -1,0 +1,30 @@
+---
+title: "Data mining exercise"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Introduction
+
+Your collaborator has made a  CAGE experiment using 7 different tissues. As a remainder, CAGE tags are 20-21 nt long tags mapping to the genome. We often cluster CAGE tags that are close to one another on the genome to a “tag cluster”. A tag cluster can then have several tags from one or several tissues. 
+
+One can view these CAGE tag clusters as being “core promoters” in the sense that they are measuring the activity and location of a core promoter.
+
+The data file `htbinf_cage_tpms` shows the CAGE tag clusters as rows, and tissues as columns. The cell values are the TPMs from the given tissue in the cluster.  There are three additional columns: the tag cluster ID, the location of the cluster in mm8 and the strand of the cluster. 
+The collaborator now wants to know:
+
+__1. How many types of  core promoters are there in terms of tissue expression patterns, and what expression patterns are these? __
+
+
+__2. What tissues are similar to each other in terms of promoter usage? They would really like to have this as a picture and not just  "values"__
+
+__3.  How many tissue-specific promoters are there, per tissue and just allover? It would be very helpful to calculate two "specificity scores": one for each tissue, and one summary score across all tissues for each promoter. __ 
+
+__4. They want to have  genome browser examples of the most tissue-specific promoter for each tissue__
+
+__5 Lastly, they want a list with the 10 most tissue-specific promoters, taking all tissues into account.__
+
+
+

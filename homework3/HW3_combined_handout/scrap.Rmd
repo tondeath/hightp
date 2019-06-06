@@ -8,5 +8,38 @@ To original hypothesis is that the factor X might be splicing factor.
 The global enrichment plot by itself could not clearly told us whether our factor X is actually splicing factor or not as the change in both splicing pattern or change in trascription start site can also led to all of those consequences with FDR < 0.05 that were found in majority of switching. These significant consequences that can be introduced by both the change in splicing pattern or change in TSS includes ORF loss, domian loss, shorter ORF or conversion to non-coding transcript.
 
 When we looks at alternative splicing analysis, we can 
+ that follow the sigmoidal-like curve. 
 
-These outliers might be the short cDNA fragments that were not completely filtered out. The outlier that came from monotonically increasing region in the line might correspond 
+
+These outliers might correspond to the cDNA fragments that came from RNAs with very low expression level. Those cDNA might have very low read coverage which in extreme cases it can even be that those cDNA were represented by single limited size read. Therefore, when the program tried to estimate the effective size, it could be estimated only from this single read which then resulting in observed outliers. The upper bound of effective size in those outliers might correspond to the largest possible read size of the type of sequencing machine that was used in this experiment.
+
+
+From the figure in question 1.1, we can see the the set of outliers that follow the sigmoidal-like curve. These outliers might correspond to the cDNA fragments that came from RNAs with very low expression level or even from the RNA that we do not have their cDNA read in the sample. Therefore, the Salmon program could estimate the size using information only from those very few reads or even did not have any read information for effective size estimation at all.
+
+For the RNAs without any read information (NumReads = 0), if their actual length were shorter than certain threshold, the effective length might be estimated using fixed equation by the Salmon program. This is why we did not see straight line in plot before certain effective length is reached. For the RNAs with actual length exceeding a certain threshold, the effective length might be set to fixed value which here is 170 bp. This corresponding to the upper bound of sigmoidal curve that we see in the plot.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+hw2
+
+
+To check the validity of the gene, we next looked at Broad H3 ChIPseq track to see the distribution of histone mark around the mouse potential gene. If this gene is actually an active functional gene, we should see some activation mark like H3K4Me1 to H3K4Me3. However, we can see from the figure (Figure 3) that in the mouse neuroprogenitor cells the mark found is mostly around the upstream of the gene where repressive marks such as H3K27Me3 or H3K9Me3 and very low level of H3K4Me1 to H3K4Me3 could be seen. This trend were all the same in other cell lines.
+
+
+To check the validity of the gene, we next looked at Broad H3 ChIPseq track to see the distribution of histone mark around the mouse potential gene. If this gene is actually an active functional gene, we should see some activation mark like H3K4Me1 to H3K4Me3. However, we can see from the figure (Figure 3) that in the mouse neuroprogenitor cells the mark found is mostly around the upstream of the gene where repressive marks such as H3K27Me3 or H3K9Me3 and very low level of H3K4Me1 to H3K4Me3 could be seen. This trend were all the same in other cell lines.
+
+Interestingly, when we turned on RepatMasker track, we could see that in mouse there were many transposon e.g. LINE or SINE directly upstream of the potential gene, while the region around *D. melanogaster rpl*41 were free of transposon. This may explain why there were many repressive histone marks up-and downstream.
+
+
+
