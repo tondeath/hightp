@@ -1,0 +1,56 @@
+---
+title: "Exam"
+author: "Nuttapong Mekvipad"
+date: "6/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Questions 0
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggrepel)
+library(DESeq2)
+set.seed(2019)
+theme_set(theme_bw())
+```
+
+## Question 1:
+
+To get bed files containing RefSeq track and CpG island track of hg18, I used Tools > Table browser menu in Genome browser to download both tracks of assembly hg18.
+
+After downloading RefSeq track, the -300 to -1 region around TSSs was selected using below command. The option -l was for specifying the size of region upstream, -r for region downstream and option -s to specify bedtools to select region based on strand.
+
+```{bash eval=FALSE}
+bedtools flank -i hg18_refseq.bed -g human.hg18.genome.txt -l 300 -r 0 -s > hg18_refseq_ups300.bed
+```
+
+__Question 1.1.  What percentage of promoter regions overlap CpG islands with at least 1 bp?__
+
+To find the percentage of promoter regions overlap CpG islands with at least 1 bp overlapping, I used the bedtools intersect as in below chunk. The hg18_refseq_ups300.bed which contain promoter region was intersected with hg18_cpg.bed, and the potion -v was used to return promoter without any overlapping. We then count the number of line of intersection results.
+
+```{bash eval=FALSE}
+bedtools intersect -a hg18_refseq_ups300.bed -b hg18_cpg.bed -v | wc -l # 30873
+wc -l hg18_refseq_ups300.bed # 72711
+# overlapping promoter = 72711-30873 = 41838
+```
+
+In total 57.54 (41838/72711 * 100) percent of promoter regions overlap CpG islands. 
+
+__Question 1.2. What percentage of CpG islands overlap promoter regions with at least 1 bp?__
+
+Similar to question 1.1, I also used bedtools intersect here, but changing input to -a option to file containing CpG island and input to -b option to file containing promoter regions.
+
+```{bash eval=FALSE}
+bedtools intersect -a hg18_cpg.bed -b hg18_refseq_ups300.bed -v | wc -l # 15043
+wc -l hg18_cpg.bed # 28226
+# overlapping CpG = 28226 - 15043 = 13183
+```
+
+In total 46.71 percent of promoter regions overlap CpG islands.
+
+

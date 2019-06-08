@@ -1,0 +1,142 @@
+---
+title: "Exam"
+author: "Nuttapong Mekvipad"
+date: "6/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Questions 0
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggrepel)
+library(DESeq2)
+set.seed(2019)
+theme_set(theme_bw())
+```
+
+## Question 1:
+
+To get bed files containing RefSeq track and CpG island track of hg18, I used Tools > Table browser menu in Genome browser to download both tracks of assembly hg18.
+
+After downloading RefSeq track, the -300 to -1 region around TSSs was selected using below command. The option -l was for specifying the size of region upstream, -r for region downstream and option -s to specify bedtools to select region based on strand.
+
+```{bash eval=FALSE}
+bedtools flank -i hg18_refseq.bed -g human.hg18.genome.txt -l 300 -r 0 -s > hg18_refseq_ups300.bed
+```
+
+__Question 1.1.  What percentage of promoter regions overlap CpG islands with at least 1 bp?__
+
+To find the percentage of promoter regions overlap CpG islands with at least 1 bp overlapping, I used the bedtools intersect as in below chunk. The hg18_refseq_ups300.bed which contain promoter region was intersected with hg18_cpg.bed, and the potion -v was used to return promoter without any overlapping. We then count the number of line of intersection results.
+
+```{bash eval=FALSE}
+bedtools intersect -v -a hg18_refseq_ups300.bed -b hg18_cpg.bed | sort | uniq | tee PromNoOverlap.bed | wc -l # 30873
+bedtools intersect -wa -a hg18_refseq_ups300.bed -b hg18_cpg.bed | sort | uniq | tee PromOverlap.bed | wc -l # 41838
+wc -l hg18_refseq_ups300.bed # 72711
+# sum up to total number
+# overlapping CpG percentage = 41838/72711 * 100
+```
+
+In total 57.54 percent of promoter regions overlap CpG islands. 
+
+__Question 1.2. What percentage of CpG islands overlap promoter regions with at least 1 bp?__
+
+Similar to question 1.1, I also used bedtools intersect here, but changing input to -a option to file containing CpG island and input to -b option to file containing promoter regions.
+
+```{bash eval=FALSE}
+bedtools intersect -v -a hg18_cpg.bed -b hg18_refseq_ups300.bed | sort | uniq | tee CpGNoOverlap.bed | wc -l # 15043
+bedtools intersect -wa -a hg18_cpg.bed -b hg18_refseq_ups300.bed | sort | uniq | tee CpGOverlap.bed | wc -l # 13183
+wc -l hg18_cpg.bed # 28226
+# sum up to total number
+# overlapping CpG percentage = 13183/28226 * 100
+```
+
+In total 46.71 percent of promoter regions overlap CpG islands.
+
+__Question 1.3. Do refseq genes (defined as rows in the refseq track)  whose promoter region overlap CpG islands have significantly more or less exons than the ones whose promoters  do not overlap CpG islands? What is the difference in the exon count d distributions between these two gene sets?__
+
+```{r message=FALSE, warning=FALSE}
+overlapPromoter <- read_tsv("PromOverlap.bed", col_names = FALSE) # number of exon at col 10
+notoverlapPromoter <- read_tsv("PromNoOverlap.bed", col_names = FALSE)
+```
+
+From the exam direction, we believe that "genes whose promoters do not overlap CpG islands are more prone to only have one exon". To test this hypothesis, we need to see whether the proportion of genes with more than one exon is larger in genes with CpG island overlap than in gene without CpG island overlap or not. We also need to confirm that these proportion in genes with and without CpG island overlap are significantly different using Chi-square or Fischer's exact test.
+
+To see the proportion, I created contigency table as below.
+
+```{r message=FALSE, warning=FALSE}
+countOverlap <- overlapPromoter[,10] %>% group_by(single.exon = X10 < 2) %>% summarise(count.overlap=n())
+countNoOverlap <- notoverlapPromoter[,10] %>% group_by(single.exon = X10 < 2) %>%
+  summarise(count.not.overlap=n())
+
+contig_table <- full_join(countNoOverlap, countOverlap) 
+
+# convert to matrix to transpose (as transpose in purrr don't gave nice tibble out)
+contig_mat <- t(as.matrix(contig_table[,2:3]))
+colnames(contig_mat) <- c("not.single.exon", "single.exon")
+contig_table <- as.tibble(contig_mat, rownames = NA) %>% mutate(proportion.single = contig_mat[,2]/rowSums(.))
+
+# fischer test need matrix
+temp_mat <- as.matrix(contig_table)
+row.names(temp_mat) <- row.names(contig_mat)
+contig_mat <- temp_mat
+contig_mat
+```
+
+```{r}
+fisher.test(contig_mat[,1:2])
+```
+
+
+__Question 1.4. Can you identify the most important problem with the analysis above (so, qustions 1.1 to 1.3) - and how would you solve it (only discussion text needed,   maximum of 50 words)?__
+
+## Question 2
+
+__Question 2.1: Using tidyverse only (no matrix operations, aggregate, etc),  make a SINGLE plot ( using `ggplot` and `facet_wrap`) showing the average CAGE signal  on the top panel and the average p300 signal  on the bottom panel, also showing the with standard error of the mean in both panels. Specifically: __
+
+__Y = average CAGE or P300 ChIP signal per bp. __
+
+__X = positions in bp  (+-1000 from enhancer center). __
+
+__Make sure to distinguish the signals by strand for CAGE data. __
+
+__Because we plot means, we would also like to have a measure of the variance - in this case the standard error of the mean. Unfortunately there is no R function for this, so you will have to make a custom function for this.  The formula for standard deviation of a vector called `x` is `sd(x)/sqrt(length(x))`. Add a ribbon (`geom_ribbon()`) to the plot which shows the +- standard error of the mean for each calculated mean value.__
+
+__Comment on your plot. What are we actually seeing? Why is this important (150 words max)?__
+
+
+```{r message=FALSE, warning=FALSE}
+cage_dat <- read_tsv("cage.txt")
+p300_dat <- read_tsv("p300.txt")
+
+cage_dat <- add_column(cage_dat, data.source = "CAGE")
+p300_dat <- add_column(p300_dat, data.source = "ChIP", strand = "Unspecified")
+
+test <- bind_rows(cage_dat, p300_dat) %>% 
+  gather(key = "position", value = "TPM", -data.source, -strand, -id) %>%
+  group_by(position, data.source, strand) %>% 
+  summarise(mean = mean(TPM, na.rm = TRUE),  
+            min.ribbon = mean - sd(TPM, na.rm = TRUE)/sqrt(n()),
+            max.ribbon = mean + sd(TPM, na.rm = TRUE)/sqrt(n())) %>% ungroup() %>%
+  mutate_at("position", as.numeric)
+
+ggplot(test) + 
+  geom_ribbon(aes(x=position, ymin = min.ribbon, ymax = max.ribbon, group=strand), 
+              fill = "grey80") +
+  geom_line(aes(x=position, y=mean, group=strand, color=strand)) +
+  facet_wrap(~data.source, nrow = 2, scales = "free") 
+```
+
+
+
+
+
+
+
+
+
+
