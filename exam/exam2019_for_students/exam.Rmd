@@ -88,11 +88,13 @@ contig_mat
 ```
 
 ```{r}
-fisher.test(contig_mat[,1:2])
+fisher.test(contig_mat[,1:2]) # use 2 side bc it can be both situation and both are intersting unlike enrichment analysis below in 3rd question
 ```
 
 
 __Question 1.4. Can you identify the most important problem with the analysis above (so, qustions 1.1 to 1.3) - and how would you solve it (only discussion text needed,   maximum of 50 words)?__
+
+The most important problems here was that we count sites to be overlap even when there is just 1 bp overlap. This might result in overestimation the degree of association between CpG island and promoter (how much are meaningful overlap are), as there might be no actual biological interaction between CpG island and promoter that overlap by just 1 bp. 
 
 ## Question 2
 
@@ -276,7 +278,7 @@ contigDEmat
 ```
 
 ```{r}
-fisher.test(contigDEmat[,1:2])
+fisher.test(contigDEmat[,1:2], alternative = "greater")
 ```
 
 
