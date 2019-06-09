@@ -2,7 +2,9 @@
 title: "Exam"
 author: "Nuttapong Mekvipad"
 date: "6/8/2019"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -21,9 +23,9 @@ theme_set(theme_bw())
 
 ## Question 1:
 
-To get bed files containing RefSeq track and CpG island track of hg18, I used Tools > Table browser menu in Genome browser to download both tracks of assembly hg18.
+To get bed files containing RefSeq track and CpG island track of hg18, we used "Table browser" menu in Genome browser to download both tracks of assembly hg18.
 
-After downloading RefSeq track, the -300 to -1 region around TSSs was selected using below command. The option -l was for specifying the size of region upstream, -r for region downstream and option -s to specify bedtools to select region based on strand.
+After downloading RefSeq track, the -300 to -1 regions around TSSs were selected using below command. The option -l was for specifying the size of region upstream, -r for region downstream and option -s to specify bedtools to select region based on strand.
 
 ```{bash eval=FALSE}
 bedtools flank -i hg18_refseq.bed -g human.hg18.genome.txt -l 300 -r 0 -s > hg18_refseq_ups300.bed
@@ -31,46 +33,49 @@ bedtools flank -i hg18_refseq.bed -g human.hg18.genome.txt -l 300 -r 0 -s > hg18
 
 __Question 1.1.  What percentage of promoter regions overlap CpG islands with at least 1 bp?__
 
-To find the percentage of promoter regions overlap CpG islands with at least 1 bp overlapping, I used the bedtools intersect as in below chunk. The hg18_refseq_ups300.bed which contain promoter region was intersected with hg18_cpg.bed, and the potion -v was used to return promoter without any overlapping. We then count the number of line of intersection results.
+To find the percentage of promoter regions overlap CpG islands with at least 1 bp overlapping, we used bedtools intersect command as in below chunk. The hg18_refseq_ups300.bed which contained promoter region was intersected with hg18_cpg.bed. The option -v in command told bedtools to return promoters without any overlap with CpG island, and the option -wa in command told bedtools to return original promoters with overlap. Then the number of unique lines of intersection results was counted.
+
+In total 57.54 percent of promoter regions overlap CpG islands. 
 
 ```{bash eval=FALSE}
 bedtools intersect -v -a hg18_refseq_ups300.bed -b hg18_cpg.bed | sort | uniq | tee PromNoOverlap.bed | wc -l # 30873
 bedtools intersect -wa -a hg18_refseq_ups300.bed -b hg18_cpg.bed | sort | uniq | tee PromOverlap.bed | wc -l # 41838
 wc -l hg18_refseq_ups300.bed # 72711
 # sum up to total number
-# overlapping CpG percentage = 41838/72711 * 100
+# overlapping CpG percentage = 41838/72711 * 100 = 57.54%
 ```
 
-In total 57.54 percent of promoter regions overlap CpG islands. 
 
 __Question 1.2. What percentage of CpG islands overlap promoter regions with at least 1 bp?__
 
-Similar to question 1.1, I also used bedtools intersect here, but changing input to -a option to file containing CpG island and input to -b option to file containing promoter regions.
+Similar to question 1.1, bedtools intersect was also used here, but the input to -a option was changed to file containing CpG island and input to -b option to file containing promoter regions.
+
+In total 46.71 percent of promoter regions overlap CpG islands.
 
 ```{bash eval=FALSE}
 bedtools intersect -v -a hg18_cpg.bed -b hg18_refseq_ups300.bed | sort | uniq | tee CpGNoOverlap.bed | wc -l # 15043
 bedtools intersect -wa -a hg18_cpg.bed -b hg18_refseq_ups300.bed | sort | uniq | tee CpGOverlap.bed | wc -l # 13183
 wc -l hg18_cpg.bed # 28226
 # sum up to total number
-# overlapping CpG percentage = 13183/28226 * 100
+# overlapping CpG percentage = 13183/28226 * 100 = 46.71%
 ```
 
-In total 46.71 percent of promoter regions overlap CpG islands.
-
-__Question 1.3. Do refseq genes (defined as rows in the refseq track)  whose promoter region overlap CpG islands have significantly more or less exons than the ones whose promoters  do not overlap CpG islands? What is the difference in the exon count d distributions between these two gene sets?__
+__Question 1.3. Do refseq genes (defined as rows in the refseq track) whose promoter region overlap CpG islands have significantly more or less exons than the ones whose promoters  do not overlap CpG islands? What is the difference in the exon count d distributions between these two gene sets?__
 
 ```{r message=FALSE, warning=FALSE}
 overlapPromoter <- read_tsv("PromOverlap.bed", col_names = FALSE) # number of exon at col 10
 notoverlapPromoter <- read_tsv("PromNoOverlap.bed", col_names = FALSE)
 ```
 
-From the exam direction, we believe that "genes whose promoters do not overlap CpG islands are more prone to only have one exon". To test this hypothesis, we need to see whether the proportion of genes with more than one exon is larger in genes with CpG island overlap than in gene without CpG island overlap or not. We also need to confirm that these proportion in genes with and without CpG island overlap are significantly different using Chi-square or Fischer's exact test.
+From the exam direction, particular hypothesis that we want to test was that genes whose promoters do not overlap CpG islands are more prone to only have one exon. To test this hypothesis, we need to see whether the proportion of genes with more than one exon is larger in genes with CpG island overlap than in gene without CpG island overlap or not. We also need to confirm that these proportion in genes with and without CpG island overlap are significantly different using Chi-square or Fisher's exact test.
 
-To see the proportion, I created contigency table as below.
+To see the proportion, we created contigency table as below.
 
 ```{r message=FALSE, warning=FALSE}
-countOverlap <- overlapPromoter[,10] %>% group_by(single.exon = X10 < 2) %>% summarise(count.overlap=n())
-countNoOverlap <- notoverlapPromoter[,10] %>% group_by(single.exon = X10 < 2) %>%
+countOverlap <- overlapPromoter[,10] %>% 
+  group_by(single.exon = X10 < 2) %>% summarise(count.overlap=n())
+countNoOverlap <- notoverlapPromoter[,10] %>% 
+  group_by(single.exon = X10 < 2) %>%
   summarise(count.not.overlap=n())
 
 contig_table <- full_join(countNoOverlap, countOverlap) 
@@ -78,7 +83,8 @@ contig_table <- full_join(countNoOverlap, countOverlap)
 # convert to matrix to transpose (as transpose in purrr don't gave nice tibble out)
 contig_mat <- t(as.matrix(contig_table[,2:3]))
 colnames(contig_mat) <- c("not.single.exon", "single.exon")
-contig_table <- as.tibble(contig_mat, rownames = NA) %>% mutate(proportion.single = single.exon/rowSums(.))
+contig_table <- as.tibble(contig_mat, rownames = NA) %>% 
+  mutate(proportion.single = single.exon/rowSums(.))
 
 # fischer test need matrix
 temp_mat <- as.matrix(contig_table)
@@ -87,10 +93,18 @@ contig_mat <- temp_mat
 contig_mat
 ```
 
+We can see that the proportion of single exon genes in the group of genes without overlap between CpG island and promoter region was about 6 times larger than the group of genes with overlap. However, we needed to test whether this difference in proportion was statistically significant at the certain alpha level (here we used 0.05). 
+
+To test difference between two proportion, we used Fischer's exact test with null hypothesis that the proportion of single exon genes in the group of genes with overlap between CpG island and promoter region was not different from that proportion of the group of genes without overlap between those two regions.
+
 ```{r}
-fisher.test(contig_mat[,1:2]) # use 2 side bc it can be both situation and both are intersting unlike enrichment analysis below in 3rd question
+fisher.test(contig_mat[,1:2]) 
+# use 2 side bc it can be both situation and both are intersting unlike enrichment analysis below in 3rd question
 ```
 
+From the results, we can see that the p-value was 2.2e-16 which was much lower than the threshold at 0.05. Therefore, we rejected null hypothesis which means that the proportion of single exon genes in the group of genes with overlap between CpG island and promoter region was significantly different from that proportion of the group of genes without overlap. 
+
+Therefore, from the proportion size difference and Fisher's exact test result, we can say that the propotion of single exon genes is higher in the group of genes without overlap than the genes with overlap.
 
 __Question 1.4. Can you identify the most important problem with the analysis above (so, qustions 1.1 to 1.3) - and how would you solve it (only discussion text needed,   maximum of 50 words)?__
 
