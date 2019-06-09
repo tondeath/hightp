@@ -132,11 +132,113 @@ ggplot(test) +
 ```
 
 
+## Question 3
 
 
 
+#### Part 1: Exploratory Data Analysis
+
+__Question 3.1.1: Read all dataset into R, and make sure all the study design, count matrix and normalized matrix have matching numbers / names of both samples/treatments and genes.__
 
 
+```{r message=FALSE, warning=FALSE}
+studyDesign <- read_tsv("studyDesign.tsv")
+# read_tsv cannot handle file with first col as row names
+countMat <- read.table("countMatrix.tsv", row.names=1, header = TRUE) 
+normCount <- read.table("normalizedMatrix.tsv", row.names=1, header = TRUE)
+diabetesGene <- read_tsv("diabetesGenes.tsv")
+
+studyDesign
+head(countMat)
+head(normCount)
+head(diabetesGene)
+
+
+```
+
+```{r}
+distMat <- dist(t(normCount), method = "euclidean")
+hclustRes <- hclust(distMat, method = "average")
+plot(hclustRes)
+```
+
+
+```{r}
+pca_sample <- prcomp(t(normCount))
+as_tibble(pca_sample$x) %>% bind_cols(studyDesign) %>%
+  ggplot(aes(x=PC1, y=PC2, color = Condition, label = rownames(pca_sample$x))) +
+  geom_point() + 
+  geom_text_repel(segment.size = 0.25, box.padding = 0.6)
+```
+
+__Question 3.1.4: Based on the two previous questions, discuss (max 70 words) whether your observations indicate the presence of one or more failed sample preparations. Use the supplied count matrix to explore whether you believe the sample should be discarded prior to further analysis.__
+
+
+```{r}
+colSums(countMat)
+```
+
+#### Part 2: Differential Expression (DE)
+
+__Question 3.2.1: Discard any outlier(s) identified in Part 1 and use DESeq2 to obtain differentially expressed (DE) genes between the two experimental conditions. Use default parameter, except use a logFC threshold of 0.25 and an adjusted P-value threshold of 0.05.__
+
+```{r}
+ddsnormCountNoOut <- DESeqDataSetFromMatrix(countData = countMat[,-5],
+                                            colData = studyDesign[-5,],
+                                            design = ~ Condition)
+
+ddsnormCountNoOut
+```
+```{r message=FALSE, warning=FALSE}
+ddsnormCountNoOut <- DESeq(ddsnormCountNoOut)
+ctrlVsTrt <- results(ddsnormCountNoOut,
+                     contrast = c("Condition", "Ctrl", "Trt"),
+                     lfcThreshold = 0.25,
+                     alpha = 0.05)
+```
+
+
+
+__Question 3.2.2: Convert the output of DESeq2 to a tibble, and make an MA-plot using ggplot2. The MA-plot should show the overall trend using a trend line and genes should colored according to their DE status. Discuss whether the MA-plot indicates an approriate DESeq2 analysis (max 70 words discussion).__
+
+```{r message=FALSE, warning=FALSE}
+dex_tibble <- ctrlVsTrt %>% as.data.frame %>%
+  rownames_to_column(var = "Gene") %>% as_tibble() 
+
+dex_tibble %>% ggplot(aes(x=baseMean, y=log2FoldChange)) + 
+  geom_point(aes(color= padj<0.05),alpha = 0.2) +
+  geom_smooth() + scale_x_log10() + 
+  geom_hline(yintercept = 0, color = "red")
+
+```
+
+__Question 3.2.3: Report the number of upregulated genes and the number of downregulated genes (regardless of whether the MA plot above looks good or not).__
+
+
+```{r}
+dex_tibble %>% filter(padj < 0.05, log2FoldChange > 0) %>% dim() # n upreg = 1165
+dex_tibble %>% filter(padj < 0.05, log2FoldChange < 0) %>% dim() # n downreg = 1172
+```
+
+__Question 3.2.4: Sort the DE statistics table  that you get from DESeq2 to report the top 5 genes sorted by__ 
+
+__a) positive logFC (highest on top)__ 
+
+__b) negative logFC (lowest on top)__
+
+__only looking at significantly differentially expressed genes__
+
+__a) positive logFC (highest on top)__ 
+
+```{r}
+dex_tibble %>% filter(padj < 0.05) %>% arrange(desc(log2FoldChange)) %>% head(5)
+```
+
+__b) negative logFC (lowest on top)__
+
+```{r}
+dex_tibble %>% filter(padj < 0.05) %>% arrange(log2FoldChange) %>% head(5)
+```
 
 
 
