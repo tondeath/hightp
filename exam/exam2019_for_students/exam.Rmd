@@ -78,7 +78,7 @@ contig_table <- full_join(countNoOverlap, countOverlap)
 # convert to matrix to transpose (as transpose in purrr don't gave nice tibble out)
 contig_mat <- t(as.matrix(contig_table[,2:3]))
 colnames(contig_mat) <- c("not.single.exon", "single.exon")
-contig_table <- as.tibble(contig_mat, rownames = NA) %>% mutate(proportion.single = contig_mat[,2]/rowSums(.))
+contig_table <- as.tibble(contig_mat, rownames = NA) %>% mutate(proportion.single = single.exon/rowSums(.))
 
 # fischer test need matrix
 temp_mat <- as.matrix(contig_table)
@@ -239,6 +239,47 @@ __b) negative logFC (lowest on top)__
 ```{r}
 dex_tibble %>% filter(padj < 0.05) %>% arrange(log2FoldChange) %>% head(5)
 ```
+
+__Question 3.3.1: Novo Nordisk claims their treatment affects expression of genes related to diabetes. Your task is to investigate whether this is true. They have supplied you with a long list of genes that are diabetes-related - diabetesGenes.tsv. One way to think about this file is that it lists all genes with a "diabetes" GO-term. Make a 2x2 contingency table that shows:__
+
+```{r echo=F, message=FALSE, warning=FALSE}
+table(`DE gene`=c(T, F, F, T), `Diabetes gene`=c(T, F, T, F))
+```
+__where the 1's are replaced by the actual counts. Hint: there are many ways of matching two vectors. One way is based on  `vector1 %in% vector2`  (we used it in the tidyverse lectures).__
+
+
+```{r echo=F, message=FALSE, warning=FALSE}
+
+DEstat <- dex_tibble$padj < 0.05
+isDiabetes <- dex_tibble$Gene %in% diabetesGene$Gene
+
+DExDia <- table(`DE gene`=DEstat, `Diabetes gene`=isDiabetes) 
+# sum up to 8762 (all genes with padj not NA)
+DExDia
+```
+
+__Question 3.3.2: Once you have your 2x2 table, investigate whether differentally expressed genes are significantly _overrepresented_  (or, in other words,  _enriched_) in terms of diabetes genes. Report both the 2x2 contingency table used for the test and P-value, and discuss the result ( max 150 word discussion).__ 
+
+```{r}
+contigDEdf <- as.data.frame.matrix(DExDia)
+rownames(contigDEdf) <- c("not.DE.gene","DE.gene")
+colnames(contigDEdf) <- c("not.diabetes", "diabetes")
+contigDEdf <- t(contigDEdf)
+
+contigDEdf <- contigDEdf %>% as.data.frame() %>% 
+  rownames_to_column() %>% as_tibble() %>% 
+  mutate(proportion.DE = DE.gene/rowSums(.[,2:3])) 
+
+contigDEmat <- as.matrix(contigDEdf[,2:4])
+rownames(contigDEmat) <- contigDEdf$rowname
+contigDEmat
+```
+
+```{r}
+fisher.test(contigDEmat[,1:2])
+```
+
+
 
 
 
