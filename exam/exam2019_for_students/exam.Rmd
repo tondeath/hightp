@@ -221,13 +221,18 @@ colSums(countMat)
 
 __Question 3.2.1: Discard any outlier(s) identified in Part 1 and use DESeq2 to obtain differentially expressed (DE) genes between the two experimental conditions. Use default parameter, except use a logFC threshold of 0.25 and an adjusted P-value threshold of 0.05.__
 
-```{r}
+To obtain differentially expressed genes usind DESeq2, we read in expression matrix dat using DESeqDataSetFromMatrix function. The matrix that we supplied to countData rgument of DESeqDataSetFromMatrix() must be matrix of unnormalized non-negative integer values of counts as specifed in DESeq2 vignette, so we supplied the matrix from countMatrix.tsv to the function. The column 5 corresponding to sample 5 was removed from count matrix before it was input to function. The row corresponding to sample 5 was also removed from design matrx before supplied it to colData argument.      
+
+```{r message=FALSE, warning=FALSE}
 ddsnormCountNoOut <- DESeqDataSetFromMatrix(countData = countMat[,-5],
                                             colData = studyDesign[-5,],
                                             design = ~ Condition)
 
 ddsnormCountNoOut
 ```
+
+We next call DESeq function over the data read in by DESeqDataSetFromMatrix. All of the parameters for DE analysis were kept as default values. The we extract results from DE analysis using results(), the comparision were set to compare between control and treatment group, the log2 fold change cutoff was set to 0.25 and the cutoff for adjusted p-value was set to 0.05. Other parameters for results extraction were kept as default.
+
 ```{r message=FALSE, warning=FALSE}
 ddsnormCountNoOut <- DESeq(ddsnormCountNoOut)
 ctrlVsTrt <- results(ddsnormCountNoOut,
@@ -238,7 +243,13 @@ ctrlVsTrt <- results(ddsnormCountNoOut,
 
 
 
-__Question 3.2.2: Convert the output of DESeq2 to a tibble, and make an MA-plot using ggplot2. The MA-plot should show the overall trend using a trend line and genes should colored according to their DE status. Discuss whether the MA-plot indicates an approriate DESeq2 analysis (max 70 words discussion).__
+__Question 3.2.2: Convert the output of DESeq2 to a tibble, and make an MA-plot using ggplot2. The MA-plot should show the overall trend using a trend line and genes should colored according to their DE status. __
+
+We converted the extracted DE results and used it to plot the MA-plot. The x axis of MA-plot was base mean of each transcript, y axis was log2 fold change between conditions. We color the points by adjusted p-value (red for padj > 0.05, blue for padj > 0.05 and grey for the transcript that padj could not be calculated). The expected trend line was plotted in red and the fitted trend line was plotted in blue using geom_smooth function.
+
+__Discuss whether the MA-plot indicates an approriate DESeq2 analysis (max 70 words discussion).__
+
+From the result, we can see that the fitted trend line curved downward and did not follow the expected trend line. We can see that the distribution of point on MA-plot was not symmetric. The highly expressed genes were downregulated more than expected. This indicated the problem in normalization step during DE analysis.
 
 ```{r message=FALSE, warning=FALSE}
 dex_tibble <- ctrlVsTrt %>% as.data.frame %>%
@@ -250,6 +261,8 @@ dex_tibble %>% ggplot(aes(x=baseMean, y=log2FoldChange)) +
   geom_hline(yintercept = 0, color = "red")
 
 ```
+
+
 
 __Question 3.2.3: Report the number of upregulated genes and the number of downregulated genes (regardless of whether the MA plot above looks good or not).__
 
