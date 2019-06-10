@@ -266,10 +266,16 @@ dex_tibble %>% ggplot(aes(x=baseMean, y=log2FoldChange)) +
 
 __Question 3.2.3: Report the number of upregulated genes and the number of downregulated genes (regardless of whether the MA plot above looks good or not).__
 
+The number of significantly upregulated gene could be found using code in below chunk. We filtered for the upregulated gene using the same cutoff value as above analysis. Genes would be count as siginificantly upregulated or down regulated when log2 fold change were higher than 0.25 or lower than -0.25 respectively, and the  adjusted p-value must be lower than 0.05. In total, there were 1165 upregulated genes and 1172 downregulated genes.
+
 
 ```{r}
-dex_tibble %>% filter(padj < 0.05, log2FoldChange > 0) %>% dim() # n upreg = 1165
-dex_tibble %>% filter(padj < 0.05, log2FoldChange < 0) %>% dim() # n downreg = 1172
+n_upreg <- dex_tibble %>% filter(padj < 0.05, log2FoldChange > 0.25) %>% 
+  nrow() # n upreg = 1165
+n_downreg <- dex_tibble %>% filter(padj < 0.05, log2FoldChange < -0.25) %>% 
+  nrow() # n downreg = 1172
+
+as_tibble(list(status=c("upregulated", "downregulated"), n=c(n_upreg,n_downreg)))
 ```
 
 __Question 3.2.4: Sort the DE statistics table  that you get from DESeq2 to report the top 5 genes sorted by__ 
@@ -280,13 +286,18 @@ __b) negative logFC (lowest on top)__
 
 __only looking at significantly differentially expressed genes__
 
+
 __a) positive logFC (highest on top)__ 
+
+To get top 5 significantly differentially expressed genes with highest log2 fold change, we filter DE analysis tibble extracted by results() for genes with adjusted p-value lower than our threshold at 0.05. Then we sort tibble by log2 fold change values from highest to lowest. The top 5 significantly upregulated gene were Gene9361, Gene1826, Gene2320, Gene8196 and Gene989.
 
 ```{r}
 dex_tibble %>% filter(padj < 0.05) %>% arrange(desc(log2FoldChange)) %>% head(5)
 ```
 
 __b) negative logFC (lowest on top)__
+
+To get top 5 significantly differentially expressed genes with lowest log2 fold change, we applied similar method as 3.2.4.a, but instead we sorted tibble by log2 fold change values from lowest to highest. The top 5 significantly downregulated gene were Gene7019, Gene8748, Gene8590, Gene136 and Gene2627.
 
 ```{r}
 dex_tibble %>% filter(padj < 0.05) %>% arrange(log2FoldChange) %>% head(5)
@@ -298,6 +309,10 @@ __Question 3.3.1: Novo Nordisk claims their treatment affects expression of gene
 table(`DE gene`=c(T, F, F, T), `Diabetes gene`=c(T, F, T, F))
 ```
 __where the 1's are replaced by the actual counts. Hint: there are many ways of matching two vectors. One way is based on  `vector1 %in% vector2`  (we used it in the tidyverse lectures).__
+
+To make 2x2 contigency table showing information above, we first create boolean vector of diferentially express status (true = significantly DE, false = not significantly DE) using < operation. Then, we created boolean vector of status of being diabetes gene (true = being diabetes gene, false = not being diabetes gene) using %in%. Finally we put both vector intemplate above to obtain table as above. 
+
+In total, 8762 genes were counted in this table excluding 762 genes that adjusted p-value could not be calculated (padj = NA). There were 122 diabetes genes, 89 of them were not significantly diferentially express and 33 of them were significantly diferentially express. There were 8640 non-diabetes genes, 6336 of them were not significantly diferentially express and 2304 of them were significantly diferentially express.
 
 
 ```{r echo=F, message=FALSE, warning=FALSE}
@@ -311,6 +326,8 @@ DExDia
 ```
 
 __Question 3.3.2: Once you have your 2x2 table, investigate whether differentally expressed genes are significantly _overrepresented_  (or, in other words,  _enriched_) in terms of diabetes genes. Report both the 2x2 contingency table used for the test and P-value, and discuss the result ( max 150 word discussion).__ 
+
+__Method descritption__
 
 ```{r}
 contigDEdf <- as.data.frame.matrix(DExDia)
@@ -326,6 +343,8 @@ contigDEmat <- as.matrix(contigDEdf[,2:4])
 rownames(contigDEmat) <- contigDEdf$rowname
 contigDEmat
 ```
+
+__Discussion (max 150 word discussion)__
 
 ```{r}
 fisher.test(contigDEmat[,1:2], alternative = "greater")
