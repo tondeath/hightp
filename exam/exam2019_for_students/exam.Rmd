@@ -67,7 +67,21 @@ overlapPromoter <- read_tsv("PromOverlap.bed", col_names = FALSE) # number of ex
 notoverlapPromoter <- read_tsv("PromNoOverlap.bed", col_names = FALSE)
 ```
 
-From the exam direction, particular hypothesis that we want to test was that genes whose promoters do not overlap CpG islands are more prone to only have one exon. To test this hypothesis, we need to see whether the proportion of genes with more than one exon is larger in genes with CpG island overlap than in gene without CpG island overlap or not. We also need to confirm that these proportion in genes with and without CpG island overlap are significantly different using Chi-square or Fisher's exact test.
+
+Before we choose what kind of test to use, we need to see the distribution of the number of exon of genes with and without overlap between CpG island and promoter. We checked this by plotting histogram below.
+
+```{r}
+exonCountOverlap <- overlapPromoter[,10] %>% add_column(type = "Overlap")
+exonCountNoOverlap <- notoverlapPromoter[,10] %>% add_column(type = "No Overlap")
+
+bind_rows(exonCountOverlap, exonCountNoOverlap) %>%
+  ggplot(aes(x=X10)) + geom_histogram(bins=40) + facet_wrap(~type, scales = "free") +
+  xlab("exon count")
+```
+
+We can see that the distribution of number of exon in both groups were not normal shape, so we could not use t-test to test the difference in number of exon here. We could use either Chi-square test or Fisher exact test for hypothesis testing.
+
+The particular hypothesis that we want to test was that genes whose promoters do not overlap CpG islands are more prone to only have one exon. To test this hypothesis, we need to see whether the proportion of genes with more than one exon is larger in genes with CpG island overlap than in gene without CpG island overlap or not. We also need to confirm that these proportion in genes with and without CpG island overlap are significantly different using Chi-square or Fisher's exact test.
 
 To see the proportion, we created contigency table as below.
 
@@ -108,7 +122,8 @@ Therefore, from the proportion size difference and Fisher's exact test result, w
 
 __Question 1.4. Can you identify the most important problem with the analysis above (so, qustions 1.1 to 1.3) - and how would you solve it (only discussion text needed,   maximum of 50 words)?__
 
-The most important problems here was that we count sites to be overlap even when there is just 1 bp overlap. This might result in overestimation the degree of association between CpG island and promoter (how much are meaningful overlap are), as there might be no actual biological interaction between CpG island and promoter that overlap by just 1 bp. 
+The most important problems here was that we count sites to be overlap even when there is just 1 bp overlap. This might result in overestimation of the proportion of promoter that actually had meaningful biological association with CpG island. To solve this problem, we can change overlaping criteria y specifying minimum overlap as some fraction of promoter length using -f option. 
+
 
 ## Question 2
 
@@ -127,9 +142,9 @@ To create the plot, we first appended data.source column to CAGE and p300 tibble
 
 __Comment on your plot. What are we actually seeing? Why is this important (150 words max)?__
 
-From the both plot, we can see that mean intensity of signal increased as the positions became closer to position 0, but the peak positions were different. For ChIP, the peak intensity is at position 0, while for the CAGE the peak intensity is at around 100 bp downstream of position 0 (around -100 on minus strand, and at around +100 on plus strand). 
+From the both CAGE and ChIP plot, we can see that mean intensity of signal increased as the positions became closer to position 0, but the peak positions of both plots were different. For ChIP, the peak intensity is at position 0, while for the CAGE the peak intensity is at around 100 bp downstream of position 0 (around -100 on minus strand, and at around +100 on plus strand). We can also see that the variance in intesity of TSS signal is larger than variance of p300 ChIP signal.
 
-What we see here is important as it actually told us about the relative position of TSS and enhancer region that p300 bind to. From the results, TSS is mostly located approximately downstream of enhancer region on both strands and especially found 100 bp downstream, but TSS can also be found around 100 bp upstream and 400 bp downstream of center of enhancer. It also told us that p300 mostly bind upstream of TSS at center of enhancer. These results also agree with and confirm our knowledeg about typical gene structure that TSS is located downstream of enhancer, but it also told us that there is some enhancer that locate downstream of TSS as far as 100 bp downstream.
+What we see here is important as it actually told us about relative position of TSS and enhancer region that p300 bind to. From the results, TSS is mostly located approximately 100 bp downstream of enhancer region on both strands, but TSS can also be found around 100 bp upstream and 400 bp downstream from center of enhancer. Tthe results also told us that the position of p300 binding site in enhancer region is quite varied, but it mostly found at center of enhancer region. These results also agree with and confirm our knowledge about typical gene structure that TSS is located downstream of enhancer. In addition, we could see that there is no fixed distance between TSS and enhancer center. 
 
 ```{r message=FALSE, warning=FALSE}
 cage_dat <- read_tsv("cage.txt")
