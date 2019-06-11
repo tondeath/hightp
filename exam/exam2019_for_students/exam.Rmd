@@ -343,9 +343,13 @@ __Question 3.3.2: Once you have your 2x2 table, investigate whether differentall
 
 __Analysis descritption__
 
-Contigency table obtained from question 3.3.2 was converted to 2x2 matrix with row and column name, so that we can easily convert it further to 2x2 tibble. We than calculated the proportion of diferentially expressed genes in groups of diabetes and non-diabetes genes. The resulting tibble was converted back to matrix so that is can be input to fisher.test() function.
+Contigency table obtained from question 3.3.2 was converted to 2x2 matrix with row and column name, so that we can easily convert it further to 2x2 tibble. We than calculated the proportion of diferentially expressed genes in groups of diabetes and non-diabetes genes. The resulting tibble was converted back to matrix so that is can be input to fisher.test() function. The contigency table for Fisher, exact test was as below.
 
-The 2x2 contingency table used for the test was as below.
+Here, we wanted to know whether the proportion of diabetes gene was significantly larger in differentialy expressed genes (was enriched) than in the genes that were not differentially expressed or not. Therefore, we use one-sided Fisher's exact test to test the different in proportion with alpha = 0.05. We chose one-side test, beacuse here we only interest in testing whether the proportion of diabetes genes in DE genes is larger than in non-DE genes or not. So that we can say that diabetes genes were overepresented in case that the proportion is significantly larger. We did not interest in the case where that proportion in non-DE genes was larger than in DE genes.
+
+The null hypothesis is that the proportion of diabetes genes in the group of diferentially expressed genes was not different from the proportion of diabetes genes in the group of non diferentially expressed genes.
+
+The alternative hypothesis is that the proportion of diabetes genes in the group of diferentially expressed genes was larger than the proportion of diabetes genes in the group of non diferentially expressed genes.
 
 ```{r}
 # convert R table to 2x2 matrix so that data can be easily handle (convert to tibble)
@@ -369,13 +373,14 @@ contigDEmat <- contigDEmat[,c(2,1,3)]
 contigDEmat
 ```
 
-Here, we wanted to know whether the proportion of diabetes gene was significantly larger in differentialy expressed genes (was enriched) than in the genes that were not differentially expressed or not. Therefore, we use one-sided Fisher's exact test to test the different in proportion. We chose one-side test, beacuse here we only interest in testing whether the proportion of diabetes genes in DE genes is larger than in non-DE genes or not. So that we can say that diabetes genes were overepresented in case that the proportion is significantly larger. We did not interest in the case where that proportion in non-DE genes was larger than in DE genes.
 
-The null hypothesis is that the proportion of diabetes genes in the group of diferentially expressed genes was not different from the proportion of diabetes genes in the group of non diferentially expressed genes.
-
-The alternative hypothesis is that the proportion of diabetes genes in the group of diferentially expressed genes was larger than the proportion of diabetes genes in the group of non diferentially expressed genes.
 
 __Discussion (max 150 word discussion)__
+
+From the contigency table above, we can see that the proportion of diabetes genes in group of diferentially expressed genes is greater than the proportion of diabetes genes in the group of non diferentially expressed genes. However, the diffrence is very small (very small effective size). 
+
+The one-side Fisher's exact test results confirm that this difference is not significant. We can see that the p-value from the test is 0.497 which is much larger than our alpha = 0.05. So, we retain null hypothesis that the proportion of diabetes genes in the group of diferentially expressed genes was not different from the proportion of diabetes genes in the group of non diferentially expressed genes. Therefore, the Novo Nordisk's claims that the treatment affects expression of diabetes-related genes is not true here. 
+
 
 ```{r}
 fisher.test(contigDEmat[,1:2], alternative = "greater")
