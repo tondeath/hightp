@@ -1,14 +1,55 @@
 ---
-title: "Exam"
-author: "Nuttapong Mekvipad"
-date: "6/8/2019"
+title: "Individual homework BOHTA 2019"
 output:
-  html_document: default
+  html_document:
+    df_print: kable
   pdf_document: default
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+__Name:__ Nuttapong Mekvipad
+
+__KI id:__ tpx555
+
+__Exam ID:__ 
+
+#Instructions
+
+For deadlines etc, see Digital Exam
+
+You have to supply both the answer (numbers, tables, plots, discussion or combinations thereof) as well as the R or Unix code you used to make the plots/results. This should be done using this R markdown template: we want both the R markdown file and the resulting __html__ file (__not a PDF!__). The html file is what you will present at the oral exam - it will be loaded on a computer/beamer when you arrive. At the oral exam, there may be questions on the homework and/or anything else from the course.
+
+In the home work part, all aids are allowed except working with others since it is an individual exam. In the oral exam part, no aids are allowed except your html file.  
+
+Please submit the results to both digital exam and absalon, to be safe. 
+
+Note that:
+
+1. If the R code or UNIX commands code gives different results than your results, you will get severe point reductions or even 0 points for the exercise
+
+2. Some questions may request you to use R or UNIX commands /options we have not covered explicitly in the course: this is part of the challenge
+
+3. Much like in an academic paper, the analysis and results should be presented on a level of detail that someone else could replicate the analysis. If not, we will deduct points.
+
+4. Use tidyverse for all analyses and plotting, unless we explicitly used something else in class for the relevant plot or analysis (e.g. plotting trees, expression analysis on matrices, heat maps, etc)
+
+For statistical tests, you have to:
+
+1. Motivate the choice of test 
+
+2. State exactly what the null and alternative hypothesis are (depends on test!) and the P-value threshold
+
+3. Comment the outcome: do you reject the null hypothesis or not, and what does this mean for the actual question we wanted to answer (interpretation)?
+
+## Questions 0:
+
+__Question 3.0.1: Load ALL the packages you need for the entire assignment, and set your seed to 2018 using `set.seed(2018)`. Tip: use `{r message=FALSE, warning=FALSE}` in the  R markdown code to avoid spamming the report with non-helpful messages__
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggrepel)
+library(DESeq2)
+set.seed(2019)
+theme_set(theme_bw())
 ```
 
 ## Questions 0
@@ -171,8 +212,6 @@ ggplot(plotDF) +
 
 ## Question 3
 
-
-
 #### Part 1: Exploratory Data Analysis
 
 __Question 3.1.1: Read all dataset into R, and make sure all the study design, count matrix and normalized matrix have matching numbers / names of both samples/treatments and genes.__
@@ -228,7 +267,7 @@ __Question 3.1.4: Based on the two previous questions, discuss (max 70 words) wh
 Based on PCA and hierachical clustering results, we can see that sample 5 which belong to control group was not clustered with other samples from control group. Even hclust put sample 5 in the same cluster as other 4 samples, the distance of sample 5 is far from other 4 samples. When we looked at sum of the read count of each sample, we can see that the number of read in samples 5 is over 1 order of magnitude lower than other 4 control samples (and also lower than treatment group). Therefore, we believe that sample 5 was failed sample and it should be discarded. 
 
 ```{r}
-colSums(countMat)
+as.data.frame(colSums(countMat))
 ```
 
 #### Part 2: Differential Expression (DE)
@@ -317,6 +356,8 @@ To get top 5 significantly differentially expressed genes with lowest log2 fold 
 dex_tibble %>% filter(padj < 0.05) %>% arrange(log2FoldChange) %>% head(5)
 ```
 
+#### Part 3: Gene Set enrichment 
+
 __Question 3.3.1: Novo Nordisk claims their treatment affects expression of genes related to diabetes. Your task is to investigate whether this is true. They have supplied you with a long list of genes that are diabetes-related - diabetesGenes.tsv. One way to think about this file is that it lists all genes with a "diabetes" GO-term. Make a 2x2 contingency table that shows:__
 
 ```{r echo=F, message=FALSE, warning=FALSE}
@@ -373,8 +414,6 @@ contigDEmat <- contigDEmat[,c(2,1,3)]
 contigDEmat
 ```
 
-
-
 __Discussion (max 150 word discussion)__
 
 From the contigency table above, we can see that the proportion of diabetes genes in group of diferentially expressed genes is greater than the proportion of diabetes genes in the group of non diferentially expressed genes. However, the diffrence is very small (very small effective size). 
@@ -386,7 +425,9 @@ The one-side Fisher's exact test results confirm that this difference is not sig
 fisher.test(contigDEmat[,1:2], alternative = "greater")
 ```
 
-1.https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#pvaluesNA
+### References
+
+1. Love, M.I., Anders, S., and Huber, W. (2019, February 9). *Analyzing RNA-seq data with DESeq2.* Retrieved from https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#pvaluesNA
 
 
 
