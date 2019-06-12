@@ -52,21 +52,11 @@ set.seed(2019)
 theme_set(theme_bw())
 ```
 
-## Questions 0
-
-```{r message=FALSE, warning=FALSE}
-library(tidyverse)
-library(ggrepel)
-library(DESeq2)
-set.seed(2019)
-theme_set(theme_bw())
-```
-
 ## Question 1:
 
 To get bed files containing RefSeq track and CpG island track of hg18, we used "Table browser" menu in Genome browser to download both tracks of assembly hg18.
 
-After downloading RefSeq track, the -300 to -1 regions around TSSs were selected using below command. The option -l was for specifying the size of region upstream (300 bp upstream here), -r for region downstream and option -s to specify bedtools to select region based on strand.
+The -300 to -1 regions around TSSs were selected using below command. The option -l was for specifying the size of region upstream (300 bp upstream here), -r was for region downstream and option -s was for specifying bedtools to select region based on strand.
 
 ```{bash eval=FALSE}
 bedtools flank -i hg18_refseq.bed -g human.hg18.genome.txt -l 300 -r 0 -s > hg18_refseq_ups300.bed
@@ -74,16 +64,16 @@ bedtools flank -i hg18_refseq.bed -g human.hg18.genome.txt -l 300 -r 0 -s > hg18
 
 __Question 1.1.  What percentage of promoter regions overlap CpG islands with at least 1 bp?__
 
-To find the percentage of promoter regions overlap CpG islands with at least 1 bp overlapping, we used bedtools intersect command as in below chunk. The hg18_refseq_ups300.bed which contained promoter region was intersected with hg18_cpg.bed. The option -v in command told bedtools to return promoters without any overlap with CpG island, and the option -wa in command told bedtools to return original promoters with overlap. Then the number of unique lines of intersection results was counted.
+To find the percentage of promoter regions that overlap CpG islands with at least 1 bp overlapping, we used bedtools intersect command as in below chunk. The hg18_refseq_ups300.bed which contained promoter region was intersected with hg18_cpg.bed. The option -v in command told bedtools to return promoters without any overlap with CpG island, and the option -wa in command told bedtools to return original promoters with overlap. Then the number of unique lines of intersection results was counted.
 
-In total 57.54 percent of promoter regions overlap CpG islands. 
+In total 57.54 percent of promoter regions (41838 from 72711 promoters) overlapped CpG islands which was close to our expectation at roughly around 50 percent. 
 
 ```{bash eval=FALSE}
 bedtools intersect -v -a hg18_refseq_ups300.bed -b hg18_cpg.bed | sort | uniq | tee PromNoOverlap.bed | wc -l # 30873
 bedtools intersect -wa -a hg18_refseq_ups300.bed -b hg18_cpg.bed | sort | uniq | tee PromOverlap.bed | wc -l # 41838
 wc -l hg18_refseq_ups300.bed # 72711
 # sum up to total number
-# overlapping CpG percentage = 41838/72711 * 100 = 57.54%
+# overlapping promoter percentage = 41838/72711 * 100 = 57.54%
 ```
 
 
@@ -91,7 +81,7 @@ __Question 1.2. What percentage of CpG islands overlap promoter regions with at 
 
 Similar to question 1.1, bedtools intersect was also used here, but the input to -a option was changed to file containing CpG island and input to -b option to file containing promoter regions.
 
-In total 46.71 percent of promoter regions overlap CpG islands.
+In total 46.71 percent of CpG isalnd regions (13183 from 28226 CpG islands) overlapped promoter regions. The result was also close to our expectation at roughly 50 percent. 
 
 ```{bash eval=FALSE}
 bedtools intersect -v -a hg18_cpg.bed -b hg18_refseq_ups300.bed | sort | uniq | tee CpGNoOverlap.bed | wc -l # 15043
@@ -109,7 +99,7 @@ notoverlapPromoter <- read_tsv("PromNoOverlap.bed", col_names = FALSE)
 ```
 
 
-Before we choose what kind of test to use, we need to see the distribution of the number of exon of genes with and without overlap between CpG island and promoter. We checked this by plotting histogram below.
+Before we chose what kind of test to use, we needed to see the distribution of the number of exon of genes with and without overlap between CpG island and promoter. We checked this by plotting histogram below.
 
 ```{r}
 exonCountOverlap <- overlapPromoter[,10] %>% add_column(type = "Overlap")
@@ -120,9 +110,9 @@ bind_rows(exonCountOverlap, exonCountNoOverlap) %>%
   xlab("exon count")
 ```
 
-We can see that the distribution of number of exon in both groups were not normal shape, so we could not use t-test to test the difference in number of exon here. We could use either Chi-square test or Fisher exact test for hypothesis testing.
+We can see that the distribution shape of number of exon in both groups were not normal shape, so we could not use t-test to test the difference in number of exon here. We could use either Chi-square test or Fisher exact test for hypothesis testing.
 
-The particular hypothesis that we want to test was that genes whose promoters do not overlap CpG islands are more prone to only have one exon. To test this hypothesis, we need to see whether the proportion of genes with more than one exon is larger in genes with CpG island overlap than in gene without CpG island overlap or not. We also need to confirm that these proportion in genes with and without CpG island overlap are significantly different using Chi-square or Fisher's exact test.
+The particular hypothesis that we wanted to test was that genes whose promoters do not overlap CpG islands are more prone to only have one exon. To test this hypothesis, we tested whether the proportion of genes with more than one exon is larger in genes with overlap between CpG island and promoter than that proportion in gene without overlap, or not. We also had to confirm that these proportions were significantly different using Chi-square or Fisher's exact test.
 
 To see the proportion, we created contigency table as below.
 
@@ -150,7 +140,7 @@ contig_mat
 
 We can see that the proportion of single exon genes in the group of genes without overlap between CpG island and promoter region was about 6 times larger than the group of genes with overlap. However, we needed to test whether this difference in proportion was statistically significant at the certain alpha level (here we used 0.05). 
 
-To test difference between two proportion, we used Fischer's exact test with null hypothesis that the proportion of single exon genes in the group of genes with overlap between CpG island and promoter region was not different from that proportion of the group of genes without overlap between those two regions. 
+To test difference between two proportion, we used Fischer's exact test with null hypothesis that the proportion of single exon genes in the group of genes with overlap between CpG island and promoter region was not different from that proportion of the group of genes without overlap between those two regions. The alternative hypothesis is that the proportion of single exon genes in the group of genes with overlap between promoter and CpG island was significnatly different from that proportion of the group of genes without overlap.
 
 ```{r}
 fisher.test(contig_mat[,1:2]) 
@@ -158,11 +148,11 @@ fisher.test(contig_mat[,1:2])
 
 From the results, we can see that the p-value was 2.2e-16 which was much lower than the threshold at 0.05. Therefore, we rejected null hypothesis which means that the proportion of single exon genes in the group of genes with overlap between CpG island and promoter region was significantly different from that proportion of the group of genes without overlap. 
 
-Therefore, from the proportion size difference and Fisher's exact test result, we can say that the propotion of single exon genes is higher in the group of genes without overlap than the genes with overlap.
+Therefore, from the proportion size difference in contigency table and Fisher's exact test result, we can say that the propotion of single exon genes is significantly higher by around 6-fold in the group of genes without overlap than the genes with overlap.
 
 __Question 1.4. Can you identify the most important problem with the analysis above (so, qustions 1.1 to 1.3) - and how would you solve it (only discussion text needed,   maximum of 50 words)?__
 
-The most important problems here was that we count sites to be overlap even when there is just 1 bp overlap. This might result in overestimation of the proportion of promoter that actually had meaningful biological association with CpG island. To solve this problem, we can change overlaping criteria y specifying minimum overlap as some fraction of promoter length using -f option. 
+The most important problems here was that we counted 2 sites to be overlap even when there was just 1 bp or more overlap. This might result in overestimation of the proportion of promoters that had meaningful biological association with CpG island. To solve this problem, we can change overlaping criteria by specifying minimum length of overlap to be some fraction of promoters length using -f option. 
 
 
 ## Question 2
@@ -177,14 +167,14 @@ __Make sure to distinguish the signals by strand for CAGE data. __
 
 __Because we plot means, we would also like to have a measure of the variance - in this case the standard error of the mean. Unfortunately there is no R function for this, so you will have to make a custom function for this.  The formula for standard deviation of a vector called `x` is `sd(x)/sqrt(length(x))`. Add a ribbon (`geom_ribbon()`) to the plot which shows the +- standard error of the mean for each calculated mean value.__
 
-To create the plot, we first appended data.source column to CAGE and p300 tibble to specify source of data using dplyr's add_column(). We also appended strand column with value set to "Unspecified" to p300 tibble. We then use dplyr's bind_rows() to concatenate p300 and CAge tibble into 1 tibble for plotting. The concatenated tibble was change into long format using gather(). We grouped the data by position, data.source and strand, and calculated mean, and mean $\pm$ standard error of each group.
+To create the plot, we first appended data.source column to CAGE and p300 tibble to specify source of data using dplyr's add_column(). We also appended strand column with value set to "Unspecified" to p300 tibble. We then used dplyr's bind_rows() to concatenate p300 and cage tibble into 1 tibble for plotting. The concatenated tibble was change into long format using gather(). We grouped the data by position, data.source and strand, and then we calculated mean, and mean $\pm$ standard error of each group.
 
 
 __Comment on your plot. What are we actually seeing? Why is this important (150 words max)?__
 
-From the both CAGE and ChIP plot, we can see that mean intensity of signal increased as the positions became closer to position 0, but the peak positions of both plots were different. For ChIP, the peak intensity is at position 0, while for the CAGE the peak intensity is at around 100 bp downstream of position 0 (around -100 on minus strand, and at around +100 on plus strand). We can also see that the variance in intesity of TSS signal is larger than variance of p300 ChIP signal.
+From the both CAGE and ChIP plot, we can see that mean intensity of signal increased as the positions became closer to position 0, but the peak positions of both plots were different. For ChIP, the peak intensity was at position 0, while for the CAGE the peak intensity was at around 100 bp downstream of position 0 (around -100 on minus strand, and at around +100 on plus strand). We can also see that the variance in intesity of TSS signal was larger than variance of p300 ChIP signal.
 
-What we see here is important as it actually told us about relative position of TSS and enhancer region that p300 bind to. From the results, TSS is mostly located approximately 100 bp downstream of enhancer region on both strands, but TSS can also be found around 100 bp upstream and 400 bp downstream from center of enhancer. Tthe results also told us that the position of p300 binding site in enhancer region is quite varied, but it mostly found at center of enhancer region. These results also agree with and confirm our knowledge about typical gene structure that TSS is located downstream of enhancer. In addition, we could see that there is no fixed distance between TSS and enhancer center. 
+What we see here is important as it actually told us about relative position of TSS and the center of enhancer region. From the results, TSS was mostly located approximately 100 bp downstream of enhancer region on both strands, but TSS could also be found around 100 bp upstream and 400 bp downstream from center of enhancer. The results also told us that the position of p300 binding site in enhancer region was quite varied, but it was mostly found at center of enhancer region. These results also agreed with and confirmed our knowledge about typical gene structure that TSS is located downstream of enhancer. In addition, we could see that the distance between TSS and enhancer center can vary between genes. 
 
 ```{r message=FALSE, warning=FALSE}
 cage_dat <- read_tsv("cage.txt")
@@ -196,9 +186,9 @@ p300_dat <- add_column(p300_dat, data.source = "ChIP", strand = "Unspecified")
 plotDF <- bind_rows(cage_dat, p300_dat) %>% 
   gather(key = "position", value = "TPM", -data.source, -strand, -id) %>%
   group_by(position, data.source, strand) %>% 
-  summarise(mean = mean(TPM, na.rm = TRUE),  
-            min.ribbon = mean - sd(TPM, na.rm = TRUE)/sqrt(n()),
-            max.ribbon = mean + sd(TPM, na.rm = TRUE)/sqrt(n())) %>% ungroup() %>%
+  summarise(mean = mean(TPM),  
+            min.ribbon = mean - sd(TPM)/sqrt(n()),
+            max.ribbon = mean + sd(TPM)/sqrt(n())) %>% ungroup() %>%
   mutate_at("position", as.numeric)
 
 ggplot(plotDF) + 
@@ -216,7 +206,7 @@ ggplot(plotDF) +
 
 __Question 3.1.1: Read all dataset into R, and make sure all the study design, count matrix and normalized matrix have matching numbers / names of both samples/treatments and genes.__
 
-We read studyDesign.tsv and diabetesGenes.tsv file using read_tsv(), but we need to read countMatrix.tsv and normalizedMatrix.tsv using read.table as read_tsv could not handle file which the number of column name in header not equal to number of column (e.g. the file with row names). Then we printed out head rows of each tibble or data frame to check the integrity. We can see that all files were read in correctly, and the number and name of samples in design tibble were the same as in other data frame.
+We read studyDesign.tsv and diabetesGenes.tsv file using read_tsv(), but we had to read countMatrix.tsv and normalizedMatrix.tsv using read.table, as read_tsv could not handle file which the number of column name in header are not equal to number of column (e.g. the file with row names). Then we printed out head rows of each tibble or data frame to check the integrity. We can see that all files were read in correctly, and the number and name of samples in design tibble were the same as in other data frame.
 
 
 ```{r message=FALSE, warning=FALSE}
@@ -231,14 +221,16 @@ head(countMat)
 head(normCount)
 head(diabetesGene)
 
-
+# check number of genes
+dim(countMat)
+dim(normCount)
 ```
 
 __Question 3.1.2: Using the normalized matrix, perform a hierachical clustering on the samples using euclidian distance and average linkage, and plot the resulting tree.__
 
-To perform a hierachical clustering, we first calculated distance matrix using dist(). The method for distance calculation was set to euclidean distance (method = "euclidean"). Then, we performed hierachical clustering using distance matrix. The method for clustering was set to average linkage (method = "average"), and the hierachical clustering result was plotted below.
+To perform a hierachical clustering, we calculated distance matrix using dist(). The method for distance calculation was set to euclidean distance (method = "euclidean"). Then, we performed hierachical clustering using distance matrix. The method for clustering was set to average linkage (method = "average"), and the hierachical clustering result was plotted below.
 
-From plot below, we can seen that there were 2 main clusters which were the cluster of samples from treatment group (sample6-10) and the cluster of samples from control group (sample1-5). We can also see that the samples from treatment group had small distance (short tree length) between each other, while sample 5 in the control group was seperated with large distance from other 4 samples in the control group.  
+From plot below, we can seen that there were 2 main clusters which were the cluster of samples from treatment group (sample6-10) and the cluster of samples from control group (sample1-5). We can also see that the samples from treatment group had small distance (short tree length) between each other, while sample 5 in the control group was seperated by a large distance from other 4 samples in the control group.  
 
 
 ```{r}
@@ -249,9 +241,9 @@ plot(hclustRes, xlab = "hierachical clustering results", sub="")
 
 __Question 3.1.3: Using the normalized matrix, perform a Principal Components Analysis (PCA) on the samples and produce a PCA-plot of the two first components, where the axis labels show the amount of variance explained by each component and samples are colored by their experimental group. Find a way to label the samples, so the identity (the sample name) of each point can easily be seen (hint: look at `geom_text()` or the ggrepel package!). Note, you should center but not scale the data.__
 
-We then performed PCA on the samples using default parameters (center = TRUE, sacle. = FALSE) and plotted the first and second principal components using ggplot. The label of the samples' condition was appended to PCA projection results using dplyr's bind_cols() before we plotted using ggplot. The x axis was set to PC1 and y axis to PC2. The point was color by condition (treatment or control), and the point label were also added to the plot using geom_text_repel function from ggrepel with some modification in repel parameters to reduce line thickness and increase distance between labels (segment.size = 0.25, box.padding = 0.6). 
+We then performed PCA on the samples using default parameters (center = TRUE, sacle. = FALSE) and plotted the first and second principal components using ggplot. The labels of the samples' condition were appended to PCA projection results using dplyr's bind_cols() before we plotted using ggplot. The x axis was PC1 and y axis was PC2. The points were color by condition (treatment or control), and the point labels were also added to the plot using geom_text_repel function from ggrepel with some modification in repel parameters to reduce line thickness and increase distance between labels (segment.size = 0.25, box.padding = 0.6). 
 
-From the results, we can see that all samples from control groups formed single cluster, while samples from control group formed 2 separate clusters which were the cluster containing samples 1 to 4 and the cluster containing only sample 5.  
+From the results, we can see that all samples from treatment groups formed single cluster, while samples from control group formed 2 separate clusters which were the cluster containing samples 1 to 4 and the cluster containing only sample 5.  
 
 
 ```{r}
@@ -264,7 +256,7 @@ as_tibble(pca_sample$x) %>% bind_cols(studyDesign) %>%
 
 __Question 3.1.4: Based on the two previous questions, discuss (max 70 words) whether your observations indicate the presence of one or more failed sample preparations. Use the supplied count matrix to explore whether you believe the sample should be discarded prior to further analysis.__
 
-Based on PCA and hierachical clustering results, we can see that sample 5 which belong to control group was not clustered with other samples from control group. Even hclust put sample 5 in the same cluster as other 4 samples, the distance of sample 5 is far from other 4 samples. When we looked at sum of the read count of each sample, we can see that the number of read in samples 5 is over 1 order of magnitude lower than other 4 control samples (and also lower than treatment group). Therefore, we believe that sample 5 was failed sample and it should be discarded. 
+Based on PCA and hierachical clustering results, we can see that sample 5 which belonged to control group was not clustered with other samples from control group. Even hclust put sample 5 in the same cluster as other control samples, the distance of sample 5 was far from other 4 samples. When we looked at sum of the read count of each sample, we can see that the number of read in samples 5 was over 1 order of magnitude lower than other 4 control samples (and also lower than treatment group). Therefore, we believed that sample 5 was failed sample and it should be discarded. 
 
 ```{r}
 as.data.frame(colSums(countMat))
@@ -274,7 +266,7 @@ as.data.frame(colSums(countMat))
 
 __Question 3.2.1: Discard any outlier(s) identified in Part 1 and use DESeq2 to obtain differentially expressed (DE) genes between the two experimental conditions. Use default parameter, except use a logFC threshold of 0.25 and an adjusted P-value threshold of 0.05.__
 
-To obtain differentially expressed genes usind DESeq2, we convert expression matrix data to DESeq-usable data structure using DESeqDataSetFromMatrix function. The matrix that we supplied to countData rgument of DESeqDataSetFromMatrix() must be matrix of unnormalized non-negative integer values of counts as specifed in DESeq2 vignette, so we supplied the matrix from countMatrix.tsv to the function. The column 5 corresponding to sample 5 was removed from count matrix before it was input to function. The row corresponding to sample 5 was also removed from design matrx before supplied it to colData argument.      
+To obtain differentially expressed genes usind DESeq2, we converted expression matrix data to DESeq-usable data structure using DESeqDataSetFromMatrix function. The matrix that we supplied to countData argument of DESeqDataSetFromMatrix() must be matrix of unnormalized non-negative integer values of counts as specifed in DESeq2 vignette. So, we supplied the matrix from countMatrix.tsv to the function. The column 5 corresponding to sample 5 was removed from count matrix before it was input to function. The row corresponding to sample 5 was also removed from design matrx before supplied it to colData argument.      
 
 ```{r message=FALSE, warning=FALSE}
 ddsnormCountNoOut <- DESeqDataSetFromMatrix(countData = countMat[,-5],
@@ -284,12 +276,12 @@ ddsnormCountNoOut <- DESeqDataSetFromMatrix(countData = countMat[,-5],
 ddsnormCountNoOut
 ```
 
-We next call DESeq function over the data read in by DESeqDataSetFromMatrix. All of the parameters for DE analysis were kept as default values. Then we extract results from DE analysis using results(), the comparision were set to compare between control and treatment group, the log2 fold change cutoff was set to 0.25 and the cutoff for adjusted p-value was set to 0.05. Other parameters for results extraction were kept as default.
+We next called DESeq function over the data read in by DESeqDataSetFromMatrix. All of the parameters for DE analysis were kept as default values. Then we extracted results from DE analysis using results(). The comparision were set to compare between treatment and control group. The log2 fold change cutoff was set to 0.25, and the cutoff for adjusted p-value was set to 0.05. Other parameters for results extraction were kept as default.
 
 ```{r message=FALSE, warning=FALSE}
 ddsnormCountNoOut <- DESeq(ddsnormCountNoOut)
 ctrlVsTrt <- results(ddsnormCountNoOut,
-                     contrast = c("Condition", "Ctrl", "Trt"),
+                     contrast = c("Condition", "Trt", "Ctrl"),
                      lfcThreshold = 0.25,
                      alpha = 0.05)
 ```
@@ -298,11 +290,11 @@ ctrlVsTrt <- results(ddsnormCountNoOut,
 
 __Question 3.2.2: Convert the output of DESeq2 to a tibble, and make an MA-plot using ggplot2. The MA-plot should show the overall trend using a trend line and genes should colored according to their DE status. __
 
-We converted the extracted DE results and used it to plot the MA-plot. The x axis of MA-plot was base mean of each transcript, y axis was log2 fold change between conditions. We color the points by adjusted p-value (red for padj > 0.05, blue for padj > 0.05 and grey for the transcript that padj could not be calculated). The expected trend line was plotted in red and the fitted trend line was plotted in blue using geom_smooth function.
+We converted the extracted DE results and used it to plot the MA-plot. The x axis of MA-plot was base mean of each transcript, and the y axis was log2 fold change between conditions. We colored the points by adjusted p-value (red for padj >= 0.05, blue for padj < 0.05 and grey for the transcript that padj could not be calculated). The expected trend line was plotted in red and the fitted trend line was plotted in blue using geom_smooth function.
 
 __Discuss whether the MA-plot indicates an approriate DESeq2 analysis (max 70 words discussion).__
 
-From the result, we can see that the fitted trend line curved downward and did not follow the expected trend line. We can see that the distribution of point on MA-plot was not symmetric. The highly expressed genes were downregulated more than expected. This indicated the problem in normalization step during DESeq analysis. We can also see some data point that adjusted p-value cannot be caluculated due to problem with read count e.g. zero counts or extreme count outlier [1].
+From the result, we can see that the fitted trend line curved upward and did not follow the expected trend line. We can also see that the distribution of point on MA-plot was not symmetric. The highly expressed genes were upregulated more than expected. This indicated the problem in normalization step during DESeq analysis. We can also see some data point that adjusted p-value cannot be caluculated due to problem with read count e.g. zero counts or extreme count outlier [1].
 
 ```{r message=FALSE, warning=FALSE}
 dex_tibble <- ctrlVsTrt %>% as.data.frame %>%
@@ -319,14 +311,14 @@ dex_tibble %>% ggplot(aes(x=baseMean, y=log2FoldChange)) +
 
 __Question 3.2.3: Report the number of upregulated genes and the number of downregulated genes (regardless of whether the MA plot above looks good or not).__
 
-The number of significantly upregulated gene could be found using code in below chunk. We filtered for the upregulated gene using the same cutoff value as above analysis. Genes would be count as siginificantly upregulated or down regulated when log2 fold change were higher than 0.25 or lower than -0.25 respectively, and the  adjusted p-value must be lower than 0.05. In total, there were 1165 upregulated genes and 1172 downregulated genes.
+The number of significantly upregulated gene in treatment could be found using code in below chunk. We filtered for the upregulated gene using the same cutoff value as above analysis. Genes would be count as siginificantly upregulated or down regulated when log2 fold change were higher than 0.25 or lower than -0.25 respectively, and the  adjusted p-value must be lower than 0.05. In total, there were 1172 upregulated genes and 1165 downregulated genes.
 
 
 ```{r}
 n_upreg <- dex_tibble %>% filter(padj < 0.05, log2FoldChange > 0.25) %>% 
-  nrow() # n upreg = 1165
+  nrow() # n upreg = 1172
 n_downreg <- dex_tibble %>% filter(padj < 0.05, log2FoldChange < -0.25) %>% 
-  nrow() # n downreg = 1172
+  nrow() # n downreg = 1165
 
 as_tibble(list(status=c("upregulated", "downregulated"), n=c(n_upreg,n_downreg)))
 ```
@@ -342,7 +334,7 @@ __only looking at significantly differentially expressed genes__
 
 __a) positive logFC (highest on top)__ 
 
-To get top 5 significantly differentially expressed genes with highest log2 fold change, we filter DE analysis tibble extracted by results() for genes with adjusted p-value lower than our threshold at 0.05. Then we sort tibble by log2 fold change values from highest to lowest. The top 5 significantly upregulated gene were Gene9361, Gene1826, Gene2320, Gene8196 and Gene989, respectively.
+To get top 5 significantly differentially expressed genes with highest log2 fold change, we filtered DE analysis tibble extracted by results() for genes with adjusted p-value lower than our threshold at 0.05. Then we sorted tibble by log2 fold change values from highest to lowest. The top 5 significantly upregulated gene were Gene7019, Gene8748, Gene8590, Gene136 and Gene2627, respectively.
 
 ```{r}
 dex_tibble %>% filter(padj < 0.05) %>% arrange(desc(log2FoldChange)) %>% head(5)
@@ -350,7 +342,7 @@ dex_tibble %>% filter(padj < 0.05) %>% arrange(desc(log2FoldChange)) %>% head(5)
 
 __b) negative logFC (lowest on top)__
 
-To get top 5 significantly differentially expressed genes with lowest log2 fold change, we applied similar method as 3.2.4.a, but instead we sorted tibble by log2 fold change values from lowest to highest. The top 5 significantly downregulated gene were Gene7019, Gene8748, Gene8590, Gene136 and Gene2627, respectively.
+To get top 5 significantly differentially expressed genes with lowest log2 fold change, we applied similar method as 3.2.4.a, but instead we sorted tibble by log2 fold change values from lowest to highest. The top 5 significantly downregulated gene were Gene9361, Gene1826, Gene2320, Gene8196 and Gene989, respectively.
 
 ```{r}
 dex_tibble %>% filter(padj < 0.05) %>% arrange(log2FoldChange) %>% head(5)
@@ -365,15 +357,15 @@ table(`DE gene`=c(T, F, F, T), `Diabetes gene`=c(T, F, T, F))
 ```
 __where the 1's are replaced by the actual counts. Hint: there are many ways of matching two vectors. One way is based on  `vector1 %in% vector2`  (we used it in the tidyverse lectures).__
 
-To make 2x2 contigency table showing information above, we first create boolean vector of diferentially express status (true = significantly DE, false = not significantly DE) using < operation. Then, we created boolean vector of status of being diabetes gene (true = being diabetes gene, false = not being diabetes gene) using %in%. Finally we put both vector intemplate above to obtain table as above. 
+To make 2x2 contigency table showing information above, we first created boolean vector of diferentially express status (true = significantly DE, false = not significantly DE) using the criteria for DE genes as above (padj < 0.05 and log2 fold change either > 0.25 or < -0.25). Then, we created boolean vector of status of being diabetes gene (true = being diabetes gene, false = not being diabetes gene) using %in%. Finally we put both vector in template above to obtain table as above. 
 
-In total, 8762 genes were counted in this table excluding 762 genes that adjusted p-value could not be calculated (padj = NA). There were 122 diabetes genes, 89 of them were not significantly diferentially express and 33 of them were significantly diferentially express. There were 8640 non-diabetes genes, 6336 of them were not significantly diferentially express and 2304 of them were significantly diferentially express.
+In total, 8762 genes were counted in this table excluding 762 genes that adjusted p-value could not be calculated (padj = NA). There were 122 diabetes genes, 89 of them were not significantly diferentially expressed and 33 of them were significantly diferentially expressed. There were 8640 non-diabetes genes, 6336 of them were not significantly diferentially express and 2304 of them were significantly diferentially express.
 
 
-```{r echo=F, message=FALSE, warning=FALSE}
-
-DEstat <- dex_tibble$padj < 0.05
-isDiabetes <- dex_tibble$Gene %in% diabetesGene$Gene
+```{r message=FALSE, warning=FALSE}
+dex_tibble_woNA <- dex_tibble %>% filter(!is.na(padj))
+DEstat <- dex_tibble_woNA$padj < 0.05 & (dex_tibble_woNA$log2FoldChange > 0.25 | dex_tibble_woNA$log2FoldChange < -0.25)
+isDiabetes <- dex_tibble_woNA$Gene %in% diabetesGene$Gene
 
 DExDia <- table(`DE gene`=DEstat, `Diabetes gene`=isDiabetes) 
 # sum up to 8762 (all genes with padj not NA)
@@ -384,13 +376,13 @@ __Question 3.3.2: Once you have your 2x2 table, investigate whether differentall
 
 __Analysis descritption__
 
-Contigency table obtained from question 3.3.2 was converted to 2x2 matrix with row and column name, so that we can easily convert it further to 2x2 tibble. We than calculated the proportion of diferentially expressed genes in groups of diabetes and non-diabetes genes. The resulting tibble was converted back to matrix so that is can be input to fisher.test() function. The contigency table for Fisher, exact test was as below.
+Contigency table obtained from question 3.3.2 was converted to 2x2 matrix with row and column name, so that we can easily convert it further to 2x2 tibble. We than calculated the proportion of diabetes genes in groups of differentially expressed and non-differentially expressed genes to see effective size. The resulting tibble was converted back to matrix so that is can be input to fisher.test() function. The contigency table for Fisher, exact test was as below.
 
-Here, we wanted to know whether the proportion of diabetes gene was significantly larger in differentialy expressed genes (was enriched) than in the genes that were not differentially expressed or not. Therefore, we use one-sided Fisher's exact test to test the different in proportion with alpha = 0.05. We chose one-side test, beacuse here we only interest in testing whether the proportion of diabetes genes in DE genes is larger than in non-DE genes or not. So that we can say that diabetes genes were overepresented in case that the proportion is significantly larger. We did not interest in the case where that proportion in non-DE genes was larger than in DE genes.
+We used one-sided Fisher's exact test to test the different in proportion with alpha = 0.05. We chose one-side test, beacuse here we only interested in testing whether the proportion of diabetes genes in differentially expressed genes was larger (was enriched) than in non-differentially expressed genes or not. So that if the proportion is significantly larger, we can say that diabetes genes were overepresented in differentially expressed genes. Also, we did not interest in the case where that proportion in non-differentially expressed genes was larger than in differentially expressed genes as we wanted to see whether diabetes genes is enriched or not.
 
-The null hypothesis is that the proportion of diabetes genes in the group of diferentially expressed genes was not different from the proportion of diabetes genes in the group of non diferentially expressed genes.
+The null hypothesis was that the proportion of diabetes genes in the group of diferentially expressed genes was not different from the proportion of diabetes genes in the group of non diferentially expressed genes.
 
-The alternative hypothesis is that the proportion of diabetes genes in the group of diferentially expressed genes was larger than the proportion of diabetes genes in the group of non diferentially expressed genes.
+The alternative hypothesis was that the proportion of diabetes genes in the group of diferentially expressed genes was larger than the proportion of diabetes genes in the group of non diferentially expressed genes.
 
 ```{r}
 # convert R table to 2x2 matrix so that data can be easily handle (convert to tibble)
@@ -416,9 +408,9 @@ contigDEmat
 
 __Discussion (max 150 word discussion)__
 
-From the contigency table above, we can see that the proportion of diabetes genes in group of diferentially expressed genes is greater than the proportion of diabetes genes in the group of non diferentially expressed genes. However, the diffrence is very small (very small effective size). 
+From the contigency table above, we can see that the proportion of diabetes genes in group of diferentially expressed genes is greater than the proportion of diabetes genes in the group of non diferentially expressed genes. However, the diffrence was very small (very small effective size). 
 
-The one-side Fisher's exact test results confirm that this difference is not significant. We can see that the p-value from the test is 0.497 which is much larger than our alpha = 0.05. So, we retain null hypothesis that the proportion of diabetes genes in the group of diferentially expressed genes was not different from the proportion of diabetes genes in the group of non diferentially expressed genes. Therefore, the Novo Nordisk's claims that the treatment affects expression of diabetes-related genes is not true here. 
+The one-side Fisher's exact test results confirmed that this difference was not significant. We can see that the p-value from the test was 0.497 which was much larger than our alpha = 0.05. So, we retained null hypothesis that the proportion of diabetes genes in the group of diferentially expressed genes was not different from the proportion of diabetes genes in the group of non diferentially expressed genes. Therefore, the Novo Nordisk's claims that the treatment affects expression of diabetes-related genes is not true here. 
 
 
 ```{r}
